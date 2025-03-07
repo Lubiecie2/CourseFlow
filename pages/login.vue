@@ -1,4 +1,8 @@
 <script setup lang="ts">
+definePageMeta({
+  layout: "login",
+});
+
 const email = ref("");
 const password = ref("");
 
