@@ -1,27 +1,9 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: "login",
-});
-
-// const { data, pending, error, refresh } = useFetch("/api/user");
-// let test = "serwer";
-// onMounted(() => {
-//   test = "klient";
-// });
-
 const email = ref("");
 const password = ref("");
 
 const onSubmit = () => {
   console.log(email.value, password.value);
-
-  const { data, pending, error, refresh } = useFetch("/api/login", {
-    method: "POST",
-    body: {
-      email: email.value,
-      password: password.value,
-    },
-  });
 };
 </script>
 <template>

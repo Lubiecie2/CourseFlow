@@ -1,6 +1,7 @@
 <template>
   <div>
     <UserNavbar></UserNavbar>
+    <foter></foter>
   </div>
 </template>
 
