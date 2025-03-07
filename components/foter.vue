@@ -68,7 +68,7 @@
   </div>
 </template>
 
-<style>
+<style scoped>
 .footer {
   background-color: #f5f2ee;
   padding: 20px;

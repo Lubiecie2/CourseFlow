@@ -38,7 +38,10 @@ const onSubmit = () => {
     </div>
     <div class="right-section">
       <div class="register-form">
-        <div class="back-button">
+        <div
+          class="back-button"
+          @click="$router.push('login')"
+        >
           <button class="square-btn">←</button>
           <span class="back-text">Powrót</span>
         </div>
