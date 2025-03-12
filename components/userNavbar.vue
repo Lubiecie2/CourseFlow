@@ -112,6 +112,9 @@
   font-weight: bold;
   color: black;
 }
+.font-size {
+  font-size: 12px;
+}
 .login-button {
   border: 2px solid black;
   background-color: white;

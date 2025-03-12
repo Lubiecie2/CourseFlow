@@ -1,11 +1,14 @@
 <template>
   <div>
+    <loggedUserNavbar></loggedUserNavbar>
+    <foter />
     <UserNavbar></UserNavbar>
-    <foter></foter>
   </div>
 </template>
 
 <script>
+import UserNavbar from "~/components/userNavbar.vue";
+
 definePageMeta({
   layout: "login",
 });

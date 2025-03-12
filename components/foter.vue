@@ -7,7 +7,8 @@
             src="../public/images/Logo.png"
             alt="Logo"
           />
-          <a class="footer-brand">Platforma <br />Szkoleniowa</a>
+          <span class="break-line" />
+          <span class="platform-name">Platforma<br />Szkoleniowa</span>
         </div>
 
         <div class="footer-link">
@@ -74,6 +75,20 @@
   padding: 20px;
   width: 100%;
   box-sizing: border-box;
+}
+
+.break-line {
+  width: 1px;
+  height: 5vh;
+  background-color: black;
+  border: none;
+  margin: 0 5px;
+}
+
+.platform-name {
+  font-weight: bold;
+  font-size: 1vw;
+  margin-left: 10px;
 }
 
 .footer-block {

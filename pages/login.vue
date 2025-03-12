@@ -5,9 +5,26 @@ definePageMeta({
 
 const email = ref("");
 const password = ref("");
+const errorMessage = ref("");
 
-const onSubmit = () => {
-  console.log(email.value, password.value);
+const onSubmit = async () => {
+  try {
+    const response = await $fetch("/login", {
+      baseURL: "http://localhost:4000/api",
+      method: "POST",
+      body: {
+        email: email.value,
+        password: password.value,
+      },
+    });
+    errorMessage.value = "Użytkownik zalogowany poprawnie";
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      errorMessage.value = "Błędny email lub hasło";
+    } else {
+      errorMessage.value = "Błąd logowania";
+    }
+  }
 };
 </script>
 <template>
@@ -42,7 +59,7 @@ const onSubmit = () => {
           <p>Zaloguj się na swoje konto.</p>
         </div>
         <div class="login-input">
-          <form @submit.prevent="handleSubmit">
+          <form @submit.prevent="onSubmit">
             <div class="form-group">
               <label for="username">Email:</label>
               <input
@@ -75,6 +92,12 @@ const onSubmit = () => {
                 Zaloguj się
               </button>
             </div>
+            <p
+              v-if="errorMessage"
+              class="error-message"
+            >
+              {{ errorMessage }}
+            </p>
           </form>
         </div>
         <hr class="break-line" />
@@ -123,6 +146,7 @@ const onSubmit = () => {
 }
 .left-title img {
   margin-top: 5vh;
+  margin-left: 60px;
 }
 
 .right-section {

@@ -8,7 +8,7 @@ const password = ref("");
 const confirmPassword = ref("");
 const passwordError = ref("");
 
-const onSubmit = () => {
+const onSubmit = async () => {
   passwordError.value = "";
 
   if (password.value !== confirmPassword.value) {
@@ -16,7 +16,15 @@ const onSubmit = () => {
     return;
   }
 
-  console.log(email.value, password.value);
+  await $fetch("/users", {
+    baseURL: "http://localhost:4000/api",
+    method: "POST",
+    body: {
+      email: email.value,
+      password: password.value,
+      username: "username",
+    },
+  });
 };
 </script>
 
