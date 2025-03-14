@@ -4,7 +4,7 @@
       <div class="footer-block">
         <div class="footer-logo">
           <img
-            src="../public/images/Logo.png"
+            src="../public/images/logo-white.png"
             alt="Logo"
           />
           <span class="break-line" />
@@ -37,7 +37,7 @@
               class="social-icon"
             >
               <img
-                src="../public/images/facebook.png"
+                src="../public/images/facebook-white.png"
                 alt="Facebook"
               />
             </a>
@@ -46,7 +46,7 @@
               class="social-icon"
             >
               <img
-                src="../public/images/instagram.png"
+                src="../public/images/instagram-white.png"
                 alt="Instagram"
               />
             </a>
@@ -71,7 +71,7 @@
 
 <style scoped>
 .footer {
-  background-color: #f5f2ee;
+  background-color: #333;
   padding: 20px;
   width: 100%;
   box-sizing: border-box;
@@ -80,7 +80,7 @@
 .break-line {
   width: 1px;
   height: 5vh;
-  background-color: black;
+  background-color: white;
   border: none;
   margin: 0 5px;
 }
@@ -89,6 +89,7 @@
   font-weight: bold;
   font-size: 1vw;
   margin-left: 10px;
+  color: white;
 }
 
 .footer-block {
@@ -115,7 +116,7 @@
 
 .footer-brand {
   font-size: 16px;
-  color: #333;
+  color: white;
 }
 
 .footer-link {
@@ -127,7 +128,7 @@
 }
 
 .footer-link-item {
-  color: #333;
+  color: white;
   font-size: 16px;
   text-decoration: none;
   padding: 5px 0;
@@ -147,7 +148,7 @@
 }
 
 .social-title {
-  color: #333;
+  color: white;
   font-size: 16px;
   margin-bottom: 10px;
 }
@@ -169,7 +170,7 @@
 
 .footer-text {
   text-align: center;
-  color: #333;
+  color: white;
   font-size: 14px;
 }
 

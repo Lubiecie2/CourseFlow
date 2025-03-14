@@ -100,7 +100,7 @@ const onSubmit = async () => {
             </p>
           </form>
         </div>
-        <hr class="break-line" />
+        <hr class="brreak-line" />
         <div class="under-text">
           <a>Nie masz konta ?</a>
           <nuxt-link
@@ -248,7 +248,7 @@ input {
   display: flex;
   justify-content: center;
 }
-.break-line {
+.brreak-line {
   margin-top: 5vh;
 }
 .under-text {

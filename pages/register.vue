@@ -7,6 +7,8 @@ const email = ref("");
 const password = ref("");
 const confirmPassword = ref("");
 const passwordError = ref("");
+const firstName = ref("");
+const lastName = ref("");
 
 const onSubmit = async () => {
   passwordError.value = "";
@@ -22,7 +24,8 @@ const onSubmit = async () => {
     body: {
       email: email.value,
       password: password.value,
-      username: "username",
+      firstName: firstName.value,
+      lastName: lastName.value,
     },
   });
 };
@@ -59,6 +62,24 @@ const onSubmit = async () => {
         </div>
         <div class="register-input">
           <form @submit.prevent="onSubmit">
+            <div class="form-group">
+              <label for="name">Imię:</label>
+              <input
+                type="text"
+                id="firstName"
+                v-model="firstName"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="name">Nazwisko:</label>
+              <input
+                type="text"
+                id="lastName"
+                v-model="lastName"
+                required
+              />
+            </div>
             <div class="form-group">
               <label for="email">Email:</label>
               <input
@@ -102,7 +123,7 @@ const onSubmit = async () => {
             </div>
           </form>
         </div>
-        <hr class="break-line" />
+        <hr class="brreak-line" />
         <div class="under-text">
           <a>Masz już konto?</a>
           <nuxt-link
@@ -117,7 +138,7 @@ const onSubmit = async () => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .register-container {
   display: flex;
   height: 100vh;
@@ -163,7 +184,7 @@ const onSubmit = async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 15vh;
+  margin-top: 5vh;
 }
 .square-btn {
   width: 40px;
@@ -228,7 +249,7 @@ input {
   display: flex;
   justify-content: center;
 }
-.break-line {
+.brreak-line {
   margin-top: 5vh;
 }
 .under-text {
