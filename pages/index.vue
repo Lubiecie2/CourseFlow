@@ -12,10 +12,9 @@ definePageMeta({
     <mainPageFirstSection></mainPageFirstSection>
     <mainPageCourse></mainPageCourse>
     <mainPageSecoundSection></mainPageSecoundSection>
-    <div class="pause"></div>
+    <MainPageThirdSection></MainPageThirdSection>
     <newPageEmailSection></newPageEmailSection>
-    <div class="pause"></div>
-
+    <MainPageOpinions></MainPageOpinions>
     <foter></foter>
   </div>
 </template>
