@@ -13,9 +13,7 @@ definePageMeta({
     <mainPageCourse></mainPageCourse>
     <mainPageSecoundSection></mainPageSecoundSection>
     <div class="pause"></div>
-    <newPageEmailSection></newPageEmailSection>
-    <div class="pause"></div>
-
+    <mainPageFirstSection></mainPageFirstSection>
     <foter></foter>
   </div>
 </template>

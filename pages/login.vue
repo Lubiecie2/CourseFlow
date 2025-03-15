@@ -6,7 +6,6 @@ definePageMeta({
 const email = ref("");
 const password = ref("");
 const errorMessage = ref("");
-
 const onSubmit = async () => {
   try {
     const response = await $fetch("/login", {
