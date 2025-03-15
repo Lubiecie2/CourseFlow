@@ -108,7 +108,8 @@ const onSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 80vh;
+  background-color: black;
 }
 .contact-container {
   width: 400px;
