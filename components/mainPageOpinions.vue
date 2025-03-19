@@ -56,31 +56,31 @@ export default {
       currentIndex: 0, // pierwszy element ma index 0
       slides: [
         {
-          name: "Karol Kowalczyk",
+          name: "Marcin Dudek",
           website: "edukacja.pl",
           text: "CourseFlow to niesamowita platforma do nauki.",
           image: "/images/recenzant.jpg",
         },
         {
-          name: "Jan Kowalski",
+          name: "Mateusz Basiaga",
           website: "ekursy.pl",
-          text: "Z CourseFlow uczę się w swoim tempie.",
+          text: "Z CourseFlow nauka nigdy nie była taka łatwa !",
           image: "/images/recenzant2.jpg",
         },
         {
-          name: "Marek Wiśniewski",
+          name: "Michał Bernardy",
           website: "uczeniezpasji.pl",
           text: "Nigdy nauka nie była tak przyjemna!",
           image: "/images/recenzant3.jpg",
         },
         {
-          name: "Piotr Nowak",
+          name: "Adrian Gargula",
           website: "naukanajuz.pl",
           text: "Z CourseFlow mogę uczyć się w dowolnym miejscu i czasie, co jest dla mnie ogromnym plusem.",
           image: "/images/rudy.jpg",
         },
         {
-          name: "Tomasz Gargula",
+          name: "Jakub Tokarczyk",
           website: "waznekursy.pl",
           text: "CourseFlow to świetne narzędzie do nauki online. Daje mi pełną kontrolę nad moim postępem.",
           image: "/images/rudy2.jpg",

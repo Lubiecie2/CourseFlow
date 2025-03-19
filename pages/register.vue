@@ -9,25 +9,42 @@ const confirmPassword = ref("");
 const passwordError = ref("");
 const firstName = ref("");
 const lastName = ref("");
+const successMessage = ref("");
+const errorMessage = ref("");
 
 const onSubmit = async () => {
   passwordError.value = "";
+  successMessage.value = "";
+  errorMessage.value = "";
 
   if (password.value !== confirmPassword.value) {
-    passwordError.value = "hasła nie są identyczne";
+    passwordError.value = "Hasła nie są identyczne";
     return;
   }
 
-  await $fetch("/users", {
-    baseURL: "http://localhost:4000/api",
-    method: "POST",
-    body: {
-      email: email.value,
-      password: password.value,
-      firstName: firstName.value,
-      lastName: lastName.value,
-    },
-  });
+  try {
+    await $fetch("/auth/register", {
+      baseURL: "http://localhost:4000/api",
+      method: "POST",
+      body: {
+        email: email.value,
+        password: password.value,
+        firstName: firstName.value,
+        lastName: lastName.value,
+      },
+    });
+
+    // Reset formularza po sukcesie
+    email.value = "";
+    password.value = "";
+    confirmPassword.value = "";
+    firstName.value = "";
+    lastName.value = "";
+
+    successMessage.value = "Konto zostało zarejestrowane pomyślnie!";
+  } catch (error) {
+    errorMessage.value = "Wystąpił błąd podczas rejestracji. Spróbuj ponownie.";
+  }
 };
 </script>
 
@@ -51,7 +68,7 @@ const onSubmit = async () => {
       <div class="register-form">
         <div
           class="back-button"
-          @click="$router.push('login')"
+          @click="$router.push('/')"
         >
           <button class="square-btn">←</button>
           <span class="back-text">Powrót</span>
@@ -113,6 +130,18 @@ const onSubmit = async () => {
                 {{ passwordError }}
               </p>
             </div>
+            <p
+              v-if="successMessage"
+              class="success-message"
+            >
+              {{ successMessage }}
+            </p>
+            <p
+              v-if="errorMessage"
+              class="error-message"
+            >
+              {{ errorMessage }}
+            </p>
             <div class="submit-button-container">
               <button
                 class="submit-button"
@@ -272,6 +301,16 @@ input {
 }
 .button-classic:hover {
   background-color: red;
+}
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 5px;
+}
+.success-message {
+  color: green;
+  font-size: 14px;
+  margin-top: 5px;
 }
 .error-message {
   color: red;

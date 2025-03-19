@@ -1,11 +1,25 @@
 <script lang="ts" setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 const menuOpen = ref(false);
+const router = useRouter();
+
+const goToLogin = () => {
+  router.push("/login");
+};
+const goToRegister = () => {
+  router.push("/register");
+};
 
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
+
+const user = useCookie("access_token");
+const logout = () => {
+  user.value = null;
+};
 </script>
 
 <template>
@@ -22,11 +36,41 @@ function toggleMenu() {
           Szkoleniowa
         </p>
       </div>
-      <div class="nav-button-container">
+
+      <div
+        class="nav-button-container"
+        v-if="user"
+      >
         <button class="red-button">Kursy</button>
-        <button class="red-button">Zarejestruj się</button>
-        <button class="red-button">Zaloguj się</button>
+        <button class="red-button">Profil</button>
+        <button
+          class="red-button"
+          @click="logout"
+        >
+          Wyloguj
+        </button>
       </div>
+
+      <div
+        class="nav-button-container"
+        v-else
+      >
+        <button class="red-button">Kursy</button>
+        <button
+          class="red-button"
+          @click="goToRegister"
+        >
+          Zarejestruj się
+        </button>
+        <button
+          class="red-button"
+          @click="goToLogin"
+        >
+          Zaloguj się
+        </button>
+      </div>
+
+      <!-- Wspólny hamburger dla obu przypadków -->
       <div
         class="hamburger"
         @click="toggleMenu"
@@ -36,14 +80,37 @@ function toggleMenu() {
         <span></span>
       </div>
     </div>
+
+    <!-- Wspólne mobile-menu dla obu przypadków -->
     <transition name="slide">
       <div
         class="mobile-menu"
         v-if="menuOpen"
       >
         <button class="red-button">Kursy</button>
-        <button class="red-button">Zarejestruj się</button>
-        <button class="red-button">Zaloguj się</button>
+        <template v-if="user">
+          <button class="red-button">Profil</button>
+          <button
+            class="red-button"
+            @click="logout"
+          >
+            Wyloguj
+          </button>
+        </template>
+        <template v-else>
+          <button
+            class="red-button"
+            @click="goToRegister"
+          >
+            Zarejestruj się
+          </button>
+          <button
+            class="red-button"
+            @click="goToLogin"
+          >
+            Zaloguj się
+          </button>
+        </template>
       </div>
     </transition>
   </div>

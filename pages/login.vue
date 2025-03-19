@@ -8,15 +8,16 @@ const password = ref("");
 const errorMessage = ref("");
 const onSubmit = async () => {
   try {
-    const response = await $fetch("/login", {
+    const response = await $fetch("/auth/login", {
       baseURL: "http://localhost:4000/api",
       method: "POST",
       body: {
         email: email.value,
         password: password.value,
       },
+      credentials: "include",
     });
-    errorMessage.value = "Użytkownik zalogowany poprawnie";
+    navigateTo("/");
   } catch (error: any) {
     if (error.response?.status === 401) {
       errorMessage.value = "Błędny email lub hasło";
@@ -77,6 +78,12 @@ const onSubmit = async () => {
                 required
               />
             </div>
+            <p
+              v-if="errorMessage"
+              class="error-message"
+            >
+              {{ errorMessage }}
+            </p>
             <button
               class="remember-button"
               type="submit"
@@ -91,12 +98,6 @@ const onSubmit = async () => {
                 Zaloguj się
               </button>
             </div>
-            <p
-              v-if="errorMessage"
-              class="error-message"
-            >
-              {{ errorMessage }}
-            </p>
           </form>
         </div>
         <hr class="brreak-line" />
@@ -271,7 +272,9 @@ input {
 .button-classic:hover {
   background-color: red;
 }
-
+.error-message {
+  color: red;
+}
 @media (max-width: 1024px) {
   .left-section {
     display: none;

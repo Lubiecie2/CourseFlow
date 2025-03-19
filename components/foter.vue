@@ -55,7 +55,7 @@
               class="social-icon"
             >
               <img
-                src="../public/images/whatsapp.png"
+                src="../public/images/social.png"
                 alt="Whatsapp"
               />
             </a>
@@ -71,7 +71,7 @@
 
 <style scoped>
 .footer {
-  background-color: #333;
+  background-color: #222;
   padding: 20px;
   width: 100%;
   box-sizing: border-box;

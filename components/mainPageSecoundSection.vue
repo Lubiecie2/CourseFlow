@@ -31,19 +31,31 @@ onMounted(() => {
           class="secound-section-text"
           :class="{ 'slide-in': sectionVisible }"
         >
-          <h1>Rozwijaj swoje umiejętności z naszą platformą!</h1>
+          <h1>Jak to działa?</h1>
           <p>
-            W sercu naszej oferty stoi zespół pasjonatów i wykwalifikowanych
-            specjalistów – kadra, która nieustannie podnosi swoje kwalifikacje i
-            tworzy kursy dostosowane do najnowszych trendów w edukacji. Dzięki
-            ich doświadczeniu, każdy kurs nabiera praktycznego wymiaru, a
-            interaktywne materiały i nowoczesne metody nauczania sprawiają, że
-            nauka staje się przyjemnością. Wykorzystaj interaktywne materiały,
-            doświadcz innowacyjnych metod nauczania i ucz się w swoim tempie.
-            Nie czekaj – rozpocznij swoją przygodę z nauką już teraz i przekonaj
-            się, jak wiedza oraz pasja naszej kadry mogą zmienić Twoją
-            przyszłość!
+            Proces nauki na naszej platformie jest prosty i intuicyjny.
+            Wystarczy kilka kroków, aby rozpocząć swoją edukacyjną podróż!
           </p>
+
+          <div class="steps">
+            <div class="step">
+              <span>📝</span>
+              <p>Zarejestruj się</p>
+            </div>
+            <div class="step">
+              <span>🎓</span>
+              <p>Wybierz kurs</p>
+            </div>
+            <div class="step">
+              <span>⏳</span>
+              <p>Ucz się we własnym tempie</p>
+            </div>
+            <div class="step">
+              <span>🏅</span>
+              <p>Zdobądź certyfikat</p>
+            </div>
+          </div>
+
           <button class="cta-button">Zapisz się teraz</button>
         </div>
       </div>
@@ -51,7 +63,7 @@ onMounted(() => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .secound-section {
   min-height: 600px;
   display: flex;
@@ -61,7 +73,7 @@ onMounted(() => {
 .secound-section-left {
   flex: 0.6;
   background: linear-gradient(360deg, #222, rgba(34, 34, 34, 0.2)),
-    url("/public/images/teams.jpg");
+    url("/public/images/secoundsectionphoto.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -95,6 +107,45 @@ onMounted(() => {
   font-size: 17px;
   line-height: 1.8;
   margin-bottom: 30px;
+}
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.step {
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.step span {
+  font-size: 30px;
+}
+
+.step p {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0;
+}
+.cta-button {
+  margin-top: 20px;
+  background-color: #222;
+  color: white;
+  font-size: 17px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  align-self: flex-start;
 }
 @media (max-width: 1024px) {
   .secound-section {

@@ -1,22 +1,49 @@
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import { ref, onMounted } from "vue";
+
+const leftTextRef = ref<HTMLElement | null>(null);
+const isVisible = ref(false);
+
+onMounted(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        isVisible.value = true;
+        observer.disconnect();
+      }
+    },
+    { threshold: 0.3 }
+  );
+
+  if (leftTextRef.value) {
+    observer.observe(leftTextRef.value);
+  }
+});
+</script>
 
 <template>
   <div>
     <div class="diagonal-container">
       <div class="left-side">
-        <div class="left-text">
-          <h1>Otwórz drzwi do nowej wiedzy i umiejętności!</h1>
+        <div
+          ref="leftTextRef"
+          class="left-text"
+          :class="{ 'slide-in': isVisible }"
+        >
+          <h1>Rozwijaj swoje umiejętności z naszą platformą!</h1>
           <p>
-            Nasza platforma szkoleniowa to miejsce stworzone dla osób pragnących
-            rozwijać swoje kompetencje i zdobywać praktyczne doświadczenie.
-            Dzięki nowoczesnym metodom nauczania i interaktywnym materiałom masz
-            dostęp do wartościowej wiedzy w dowolnym miejscu i czasie.
-            Niezależnie od tego, czy chcesz podnieść swoje kwalifikacje
-            zawodowe, zdobyć nowy zawód czy rozwijać swoje pasje, znajdziesz
-            tutaj kursy dopasowane do Twoich potrzeb. Dołącz do nas i rozpocznij
-            swoją edukacyjną podróż już dziś!
+            W sercu naszej oferty stoi zespół pasjonatów i wykwalifikowanych
+            specjalistów – kadra, która nieustannie podnosi swoje kwalifikacje i
+            tworzy kursy dostosowane do najnowszych trendów w edukacji. Dzięki
+            ich doświadczeniu, każdy kurs nabiera praktycznego wymiaru, a
+            interaktywne materiały i nowoczesne metody nauczania sprawiają, że
+            nauka staje się przyjemnością. Wykorzystaj interaktywne materiały,
+            doświadcz innowacyjnych metod nauczania i ucz się w swoim tempie.
+            Nie czekaj – rozpocznij swoją przygodę z nauką już teraz i przekonaj
+            się, jak wiedza oraz pasja naszej kadry mogą zmienić Twoją
+            przyszłość!
           </p>
-          <button class="cta-button">Rozpocznij naukę</button>
+          <button class="cta-button">Zapisz się teraz</button>
         </div>
       </div>
       <div class="right-side"></div>
@@ -34,17 +61,6 @@
   overflow: hidden;
 }
 
-@keyframes slideInFromRight {
-  0% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 .left-side {
   flex: 0.35;
   color: black;
@@ -55,7 +71,18 @@
   align-items: flex-start;
   box-sizing: border-box;
   text-align: left;
-  animation: slideInFromRight 1.3s ease-out forwards;
+}
+
+.left-text {
+  width: 600px;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: opacity 1s ease-out, transform 0.8s ease-out;
+}
+
+.left-text.slide-in {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .left-side h1 {
@@ -71,14 +98,10 @@
   margin-bottom: 30px;
 }
 
-.left-text {
-  width: 600px;
-}
-
 .right-side {
   flex: 0.65;
   background: linear-gradient(360deg, #222, rgba(34, 34, 34, 0.2)),
-    url("/public/images/rudy2.jpg");
+    url("/public/images/teamwork.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -108,37 +131,6 @@
 
 .cta-button:hover {
   background-color: #444;
-}
-
-.hero-sc {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.dcr-left {
-  width: 100%;
-  background: linear-gradient(360deg, #222, rgba(34, 34, 34, 0.2)),
-    url("/public/images/rudy2.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  height: 100%;
-}
-.text-content {
-  width: 100%;
-}
-
-.text-content h1 {
-  font-size: 38px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  line-height: 1.2;
-}
-
-.text-content p {
-  font-size: 17px;
-  line-height: 1.8;
-  margin-bottom: 30px;
 }
 
 @media (max-width: 1024px) {
