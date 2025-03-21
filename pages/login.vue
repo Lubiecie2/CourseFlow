@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: "login",
+  middleware: "auth",
 });
 
 const email = ref("");

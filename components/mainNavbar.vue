@@ -4,12 +4,17 @@ import { useRouter } from "vue-router";
 
 const menuOpen = ref(false);
 const router = useRouter();
+const userRole = ref(null);
 
 const goToLogin = () => {
   router.push("/login");
 };
 const goToRegister = () => {
   router.push("/register");
+};
+
+const goToAdminPanel = () => {
+  router.push("/admin");
 };
 
 function toggleMenu() {
@@ -69,8 +74,6 @@ const logout = () => {
           Zaloguj się
         </button>
       </div>
-
-      <!-- Wspólny hamburger dla obu przypadków -->
       <div
         class="hamburger"
         @click="toggleMenu"
@@ -80,8 +83,6 @@ const logout = () => {
         <span></span>
       </div>
     </div>
-
-    <!-- Wspólne mobile-menu dla obu przypadków -->
     <transition name="slide">
       <div
         class="mobile-menu"

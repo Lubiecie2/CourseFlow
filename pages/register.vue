@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: "login",
+  middleware: "auth",
 });
 
 const email = ref("");
@@ -12,6 +13,15 @@ const lastName = ref("");
 const successMessage = ref("");
 const errorMessage = ref("");
 
+const validatePassword = (password: string) => {
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{10,}$/;
+
+  if (!passwordRegex.test(password)) {
+    return "Hasło musi mieć co najmniej 10 znaków, zawierać jedną dużą literę i jedną cyfrę.";
+  }
+  return "";
+};
+
 const onSubmit = async () => {
   passwordError.value = "";
   successMessage.value = "";
@@ -19,6 +29,12 @@ const onSubmit = async () => {
 
   if (password.value !== confirmPassword.value) {
     passwordError.value = "Hasła nie są identyczne";
+    return;
+  }
+
+  const passwordValidationError = validatePassword(password.value);
+  if (passwordValidationError) {
+    passwordError.value = passwordValidationError;
     return;
   }
 

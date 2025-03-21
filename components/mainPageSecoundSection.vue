@@ -147,6 +147,9 @@ onMounted(() => {
   transition: background 0.3s ease;
   align-self: flex-start;
 }
+.cta-button:hover {
+  background-color: #444;
+}
 @media (max-width: 1024px) {
   .secound-section {
     flex-direction: column;

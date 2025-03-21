@@ -148,6 +148,7 @@ onMounted(() => {
 
   .left-text {
     max-width: 100%;
+    width: 100%;
   }
 
   .right-side {
@@ -155,23 +156,36 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1024px) {
   .left-side {
     padding: 20px;
     align-items: center;
   }
 
+  .left-text {
+    width: 100%;
+    max-width: 90%;
+    transform: translateX(50%);
+  }
+
+  .left-text.slide-in {
+    transform: translateX(0);
+  }
+
   .left-text h1 {
-    font-size: 28px;
+    font-size: 24px;
+    margin-bottom: 15px;
   }
 
   .left-text p {
-    font-size: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
   }
 
   .cta-button {
-    font-size: 15px;
-    padding: 8px 16px;
+    font-size: 14px;
+    padding: 8px 14px;
   }
 
   .right-side {
