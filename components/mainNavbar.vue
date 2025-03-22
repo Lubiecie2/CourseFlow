@@ -1,10 +1,9 @@
-<script lang="ts" setup>
+<script setup>
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useUserStore } from "../stores/users";
 
 const menuOpen = ref(false);
 const router = useRouter();
-const userRole = ref(null);
 
 const goToLogin = () => {
   router.push("/login");
@@ -13,18 +12,13 @@ const goToRegister = () => {
   router.push("/register");
 };
 
-const goToAdminPanel = () => {
-  router.push("/admin");
-};
-
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
 
-const user = useUserStore();
-const logout = () => {
-  user.logout();
-};
+const userStore = useUserStore();
+const { user, isLogged } = storeToRefs(userStore);
+const { logout } = userStore;
 </script>
 
 <template>
@@ -42,11 +36,17 @@ const logout = () => {
         </p>
       </div>
 
+      <!-- Zalogowany użytkownik -->
       <div
         class="nav-button-container"
-        v-if="user.isLogged"
+        v-if="isLogged"
       >
         <button class="red-button">Kursy</button>
+
+        <template v-if="user.role === 'admin'">
+          <button class="red-button">Panel Admina</button>
+        </template>
+
         <button class="red-button">Profil</button>
         <button
           class="red-button"
@@ -55,7 +55,9 @@ const logout = () => {
           Wyloguj
         </button>
       </div>
+      <!-- Koniec Zalogowany użytkownik -->
 
+      <!-- Niezalogowany użytkownik -->
       <div
         class="nav-button-container"
         v-else
@@ -74,6 +76,7 @@ const logout = () => {
           Zaloguj się
         </button>
       </div>
+
       <div
         class="hamburger"
         @click="toggleMenu"
@@ -83,13 +86,19 @@ const logout = () => {
         <span></span>
       </div>
     </div>
+
     <transition name="slide">
       <div
         class="mobile-menu"
         v-if="menuOpen"
       >
         <button class="red-button">Kursy</button>
-        <template v-if="user.isLogged">
+
+        <template v-if="isLogged">
+          <template v-if="user.role === 'admin'">
+            <button class="red-button">Panel Admina</button>
+          </template>
+
           <button class="red-button">Profil</button>
           <button
             class="red-button"
@@ -98,6 +107,7 @@ const logout = () => {
             Wyloguj
           </button>
         </template>
+
         <template v-else>
           <button
             class="red-button"
