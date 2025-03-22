@@ -3,7 +3,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     baseURL: "http://localhost:4000/api",
     onRequest: ({ request, options, error }) => {
       const token = useCookie("access_token");
-      console.log("token", token);
+      console.log("plgin token");
       if (token.value) {
         const headers = (options.headers ||= {});
 
@@ -19,7 +19,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     onResponseError: async ({ response }) => {
       if (response.status === 401) {
         console.log("response", response.status);
-        useCookie("access_token").value = null;
+        // useCookie("access_token").value = null;
         await nuxtApp.runWithContext(() =>
           navigateTo("/login", { replace: true })
         );

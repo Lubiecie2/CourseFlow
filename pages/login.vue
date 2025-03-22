@@ -107,13 +107,12 @@ const onSubmit = async () => {
         <hr class="brreak-line" />
         <div class="under-text">
           <a>Nie masz konta ?</a>
-          <nuxt-link
+          <NuxtLink
             to="/register"
-            href="#"
             class="button-classic"
           >
             Zarejestruj się
-          </nuxt-link>
+          </NuxtLink>
         </div>
       </div>
     </div>

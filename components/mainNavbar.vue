@@ -89,7 +89,7 @@ const logout = () => {
         v-if="menuOpen"
       >
         <button class="red-button">Kursy</button>
-        <template v-if="user">
+        <template v-if="user.isLogged">
           <button class="red-button">Profil</button>
           <button
             class="red-button"

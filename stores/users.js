@@ -23,6 +23,7 @@ export const useUserStore = defineStore("user", () => {
   const isLogged = computed(() => !!user.value);
 
   const logout = () => {
+    console.log("logout");
     user.value = null;
     useCookie("access_token").value = null;
   };
