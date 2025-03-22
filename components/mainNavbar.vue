@@ -12,6 +12,10 @@ const goToRegister = () => {
   router.push("/register");
 };
 
+const goToAdminPanel = () => {
+  router.push("/admin");
+};
+
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
@@ -96,7 +100,12 @@ const { logout } = userStore;
 
         <template v-if="isLogged">
           <template v-if="user.role === 'admin'">
-            <button class="red-button">Panel Admina</button>
+            <button
+              class="red-button"
+              @click="goToAdminPanel"
+            >
+              Panel Admina
+            </button>
           </template>
 
           <button class="red-button">Profil</button>

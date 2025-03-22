@@ -1,36 +1,29 @@
-<script lang="ts" setup>
-import { useRouter } from "vue-router";
+<script setup>
 import { ref } from "vue";
+import { useUserStore } from "../stores/users";
 
+const menuOpen = ref(false);
 const router = useRouter();
-const activeSection = ref("courses");
 
 const goToCourses = () => {
   router.push("/courses");
-  activeSection.value = "courses";
 };
-
 const goToUsers = () => {
   router.push("/users");
-  activeSection.value = "users";
 };
-
 const goToTests = () => {
   router.push("/tests");
-  activeSection.value = "tests";
 };
-
-const isActive = (section: string) => {
-  return activeSection.value === section;
+const goToMainPage = () => {
+  router.push("/");
 };
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value;
+}
 
-const goToHome = () => {
-  router.push("./");
-};
-
-definePageMeta({
-  layout: "login",
-});
+const userStore = useUserStore();
+const { user, isLogged } = storeToRefs(userStore);
+const { logout } = userStore;
 </script>
 
 <template>
@@ -47,39 +40,79 @@ definePageMeta({
           Administratora
         </p>
       </div>
-      <div class="nav-buttons">
-        <div class="button-container">
-          <button
-            @click="goToCourses"
-            :class="{ active: isActive('courses') }"
-          >
-            Lista Kursów
-          </button>
-          <button
-            @click="goToUsers"
-            :class="{ active: isActive('users') }"
-          >
-            Zarządzaj Użytkownikami
-          </button>
-          <button
-            @click="goToTests"
-            :class="{ active: isActive('tests') }"
-          >
-            Testy
-          </button>
-        </div>
+
+      <div class="nav-button-container">
         <button
-          class="user-icon"
-          @click="goToHome"
+          class="red-button"
+          @click="goToCourses"
         >
-          &#127968;
+          Lista kursów
+        </button>
+        <button
+          class="red-button"
+          @click="goToUsers"
+        >
+          Zarządzaj użytkownikami
+        </button>
+        <button
+          class="red-button"
+          @click="goToTests"
+        >
+          Testy
+        </button>
+        <button
+          class="red-button"
+          @click="goToMainPage"
+        >
+          Strona główna
         </button>
       </div>
+
+      <div
+        class="hamburger"
+        @click="toggleMenu"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
     </div>
+
+    <transition name="slide">
+      <div
+        class="mobile-menu"
+        v-if="menuOpen"
+      >
+        <button
+          class="red-button"
+          @click="goToCourses"
+        >
+          Lista kursów
+        </button>
+        <button
+          class="red-button"
+          @click="goToUsers"
+        >
+          Zarządzaj użytkownikami
+        </button>
+        <button
+          class="red-button"
+          @click="goToTests"
+        >
+          Testy
+        </button>
+        <button
+          class="red-button"
+          @click="goToMainPage"
+        >
+          Strona główna
+        </button>
+      </div>
+    </transition>
   </div>
 </template>
 
-<style scoped>
+<style>
 .navbar {
   width: 100%;
   height: 120px;
@@ -87,7 +120,6 @@ definePageMeta({
   justify-content: space-between;
   align-items: center;
   position: relative;
-  padding: 0 5vh;
 }
 
 .nav-logo {
@@ -114,110 +146,101 @@ definePageMeta({
   height: 70px;
   background-color: black;
   border: none;
-  margin: 0 10px;
+  margin: 0 5px;
 }
 
-.nav-buttons {
-  display: flex;
-  justify-content: center;
-  flex-grow: 1;
-  gap: 30px;
+.nav-button-container {
+  margin-right: 10vh;
 }
 
-.button-container {
-  display: flex;
-  gap: 30px;
-}
-
-button {
-  background: none;
-  color: black;
-  font-size: 1.4rem;
-  font-weight: 600;
-  border: none;
-  text-decoration: none;
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
   cursor: pointer;
-  transition: color 0.3s, border-bottom 0.3s;
-  position: relative;
+  margin-right: 5vh;
 }
 
-button.active {
-  color: #c54242;
-}
-
-button.active::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 100%;
+.hamburger span {
+  display: block;
   height: 3px;
+  background-color: #eb5757;
+  border-radius: 2px;
+}
+
+.red-button {
+  background-color: #eb5757;
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-right: 20px;
+}
+
+.red-button:hover {
   background-color: #c54242;
 }
 
-button:hover {
-  color: #c54242;
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  background-color: #fff;
+  padding: 10px 0;
 }
 
-.user-icon {
-  font-size: 40px;
-  cursor: pointer;
-  margin-left: 5vh;
+.mobile-menu .red-button {
+  margin: 10px 0;
+  width: 80%;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: max-height 0.5s ease, opacity 0.5s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.slide-enter-to,
+.slide-leave-from {
+  max-height: 300px;
+  opacity: 1;
 }
 
 @media (max-width: 1024px) {
-  .navbar {
-    padding: 0 2vh;
+  .nav-button-container {
+    display: none;
   }
-
-  .nav-buttons {
-    gap: 20px;
+  .hamburger {
+    display: flex;
+  }
+  .mobile-menu {
+    display: flex;
   }
 }
-
 @media (max-width: 768px) {
-  .navbar {
-    flex-direction: column;
-    height: auto;
-    padding: 10px;
+  .nav-button-container {
+    display: none;
   }
-
-  .nav-buttons {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+  .hamburger {
+    display: flex;
   }
-
-  .button-container {
-    gap: 20px;
+  .mobile-menu {
+    display: flex;
   }
-
   .logo-text {
-    font-size: 1.2rem;
+    display: none;
   }
-
-  button {
-    font-size: 1.2rem;
-  }
-
-  .user-icon {
-    font-size: 35px;
-    margin-left: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .logo-text {
-    font-size: 1rem;
-  }
-
-  button {
-    font-size: 1rem;
-    padding: 10px;
-  }
-
-  .user-icon {
-    font-size: 30px;
+  .break-line {
+    display: none;
   }
 }
 </style>
