@@ -1,8 +1,10 @@
-<script setup lang="ts">
+<script setup>
 definePageMeta({
   layout: "login",
   middleware: "auth",
 });
+
+const user = useUserStore();
 
 const email = ref("");
 const password = ref("");
@@ -18,8 +20,9 @@ const onSubmit = async () => {
       },
       credentials: "include",
     });
+    await user.fetchUser();
     navigateTo("/");
-  } catch (error: any) {
+  } catch (error) {
     if (error.response?.status === 401) {
       errorMessage.value = "Błędny email lub hasło";
     } else {

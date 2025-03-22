@@ -21,9 +21,9 @@ function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
 
-const user = useCookie("access_token");
+const user = useUserStore();
 const logout = () => {
-  user.value = null;
+  user.logout();
 };
 </script>
 
@@ -44,7 +44,7 @@ const logout = () => {
 
       <div
         class="nav-button-container"
-        v-if="user"
+        v-if="user.isLogged"
       >
         <button class="red-button">Kursy</button>
         <button class="red-button">Profil</button>

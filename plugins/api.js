@@ -3,7 +3,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     baseURL: "http://localhost:4000/api",
     onRequest: ({ request, options, error }) => {
       const token = useCookie("access_token");
-
+      console.log("token", token);
       if (token.value) {
         const headers = (options.headers ||= {});
 
