@@ -4,9 +4,19 @@ definePageMeta({
   layout: "login",
 });
 
-const { data: users, error, refresh } = await useAPI("admin/users"); // pobranie danych o użytkownikach z API
+const { data: users, error, refresh } = await useAPI("admin/users");
 let editingUserId = null;
 let userToDelete = null;
+const searchQuery = ref("");
+
+const filteredUsers = computed(() => {
+  if (!searchQuery.value) {
+    return users.value;
+  }
+  return users.value.filter((user) =>
+    user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
 
 const startEdit = (user) => {
   if (editingUserId !== null && editingUserId !== user.id) {
@@ -24,7 +34,7 @@ const startEdit = (user) => {
 
 const saveRoleChange = async (user) => {
   if (user.role !== user.newRole) {
-    await changeUserRole(user.id, user.newRole); // tutaj zapisywana jest zmiana roli
+    await changeUserRole(user.id, user.newRole);
   }
   user.editingRole = false;
   editingUserId = null;
@@ -39,7 +49,6 @@ const cancelEdit = (user) => {
 const changeUserRole = async (userId, newRole) => {
   try {
     await useAPI(`admin/users/${userId}/role`, {
-      // wysłanie zapytania do API o zmianę roli
       method: "PUT",
       body: { role: newRole },
     });
@@ -62,7 +71,7 @@ const cancelDelete = () => {
 const deleteUser = async () => {
   if (userToDelete) {
     try {
-      await useAPI(`admin/users/${userToDelete.id}`, { method: "DELETE" }); // usuwanie użytkownika z bazy danych za pomocą API
+      await useAPI(`admin/users/${userToDelete.id}`, { method: "DELETE" });
       users.value = users.value.filter((user) => user.id !== userToDelete.id);
       userToDelete = null;
       showDeleteDialog.value = false;
@@ -79,6 +88,16 @@ const showDeleteDialog = ref(false);
   <AdminNavbar />
   <div class="container">
     <h1 class="page-title">Lista Użytkowników</h1>
+
+    <div class="search-container">
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Szukaj użytkowników po emailu, imieniu lub nazwisku"
+        class="search-input"
+        @input="searchUsers"
+      />
+    </div>
 
     <div
       v-if="error"
@@ -108,7 +127,7 @@ const showDeleteDialog = ref(false);
         </thead>
         <tbody>
           <tr
-            v-for="user in users"
+            v-for="user in filteredUsers"
             :key="user.id"
           >
             <td>{{ user.id }}</td>
@@ -209,6 +228,19 @@ const showDeleteDialog = ref(false);
   margin-bottom: 20px;
 }
 
+.search-container {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.search-input {
+  width: 60%;
+  padding: 8px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
 .user-table {
   width: 100%;
   margin: 0 auto;
@@ -281,15 +313,6 @@ const showDeleteDialog = ref(false);
   opacity: 0.6;
 }
 
-.select {
-  padding: 2px;
-  margin-top: 5px;
-  font-size: 1rem;
-  border-radius: 5px;
-  border: 1px solid #ddd;
-  width: 100%;
-}
-
 .role-select {
   width: 60%;
 }
@@ -321,17 +344,17 @@ const showDeleteDialog = ref(false);
 
 .user-table th:nth-child(2),
 .user-table td:nth-child(2) {
-  width: 15%;
+  width: 20%;
 }
 
 .user-table th:nth-child(3),
 .user-table td:nth-child(3) {
-  width: 15%;
+  width: 20%;
 }
 
 .user-table th:nth-child(4),
 .user-table td:nth-child(4) {
-  width: 15%;
+  width: 20%;
 }
 
 .user-table th:nth-child(5),
@@ -340,7 +363,7 @@ const showDeleteDialog = ref(false);
 }
 
 .user-table th:nth-child(6),
-.user-table td:nth-child(6) {
+"user-table td:nth-child(6)" {
   width: 12%;
 }
 
