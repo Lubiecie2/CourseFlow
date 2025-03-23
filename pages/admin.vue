@@ -1,8 +1,9 @@
-<script lang="ts" setup>
+<script setup>
 import { ref } from "vue";
 
 definePageMeta({
   layout: "login",
+  middleware: "admin-auth",
 });
 </script>
 

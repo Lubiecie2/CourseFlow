@@ -229,7 +229,7 @@ const onSubmit = async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 5vh;
+  margin-top: 3vh;
 }
 .square-btn {
   width: 40px;

@@ -135,7 +135,7 @@
 }
 
 .footer-link-item:hover {
-  color: #0073e6;
+  color: #eb5757;
 }
 
 .footer-social {

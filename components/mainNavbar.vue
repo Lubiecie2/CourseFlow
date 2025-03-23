@@ -48,7 +48,11 @@ const { logout } = userStore;
         <button class="red-button">Kursy</button>
 
         <template v-if="user.role === 'admin'">
-          <button class="red-button">Panel Admina</button>
+          <NuxtLink
+            to="/admin"
+            class="red-button"
+            >Panel Admina</NuxtLink
+          >
         </template>
 
         <button class="red-button">Profil</button>
