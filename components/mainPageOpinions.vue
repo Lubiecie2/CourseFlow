@@ -59,7 +59,7 @@ export default {
           name: "Marcin Dudek",
           website: "edukacja.pl",
           text: "CourseFlow to niesamowita platforma do nauki.",
-          image: "/images/recenzant.jpg",
+          image: "/images/recenzant4.jpg",
         },
         {
           name: "Mateusz Basiaga",
@@ -77,13 +77,13 @@ export default {
           name: "Adrian Gargula",
           website: "naukanajuz.pl",
           text: "Z CourseFlow mogę uczyć się w dowolnym miejscu i czasie, co jest dla mnie ogromnym plusem.",
-          image: "/images/rudy.jpg",
+          image: "/images/recenzant.jpg",
         },
         {
           name: "Jakub Tokarczyk",
           website: "waznekursy.pl",
           text: "CourseFlow to świetne narzędzie do nauki online. Daje mi pełną kontrolę nad moim postępem.",
-          image: "/images/rudy2.jpg",
+          image: "/images/recenzant5.jpg",
         },
       ],
     };

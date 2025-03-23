@@ -3,7 +3,7 @@ import { ref } from "vue";
 
 definePageMeta({
   layout: "login",
-  middleware: "admin-auth",
+  middleware: ["auth", "admin-auth"],
 });
 </script>
 

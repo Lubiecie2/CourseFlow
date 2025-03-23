@@ -78,7 +78,7 @@
 .right-side {
   flex: 0.65;
   background: linear-gradient(360deg, #222, rgba(34, 34, 34, 0.2)),
-    url("/public/images/rudy2.jpg");
+    url("/public/images/sekcja1.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
