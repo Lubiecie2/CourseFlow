@@ -49,7 +49,7 @@ const cancelEdit = (user) => {
 const changeUserRole = async (userId, newRole) => {
   try {
     await useAPI(`admin/users/${userId}/role`, {
-      method: "PUT",
+      method: "PATCH",
       body: { role: newRole },
     });
     await refresh();
@@ -363,7 +363,7 @@ const showDeleteDialog = ref(false);
 }
 
 .user-table th:nth-child(6),
-"user-table td:nth-child(6)" {
+user-table td:nth-child(6) {
   width: 12%;
 }
 
