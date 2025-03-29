@@ -12,10 +12,6 @@ const goToRegister = () => {
   router.push("/register");
 };
 
-const goToAdminPanel = () => {
-  router.push("/admin");
-};
-
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
@@ -45,15 +41,13 @@ const { logout } = userStore;
         class="nav-button-container"
         v-if="isLogged"
       >
+        <NuxtLink
+          to="/admin"
+          class="red-button"
+          v-if="usePermissionGuard('PANEL_SHOW_ADMIN_PANEL')"
+          >Zarządzanie stroną
+        </NuxtLink>
         <button class="red-button">Kursy</button>
-
-        <template v-if="user.role === 'admin'">
-          <NuxtLink
-            to="/admin"
-            class="red-button"
-            >Panel Admina</NuxtLink
-          >
-        </template>
 
         <button class="red-button">Profil</button>
         <button
@@ -100,18 +94,14 @@ const { logout } = userStore;
         class="mobile-menu"
         v-if="menuOpen"
       >
+        <NuxtLink
+          to="/admin"
+          class="red-button"
+          >Zarządzanie stroną</NuxtLink
+        >
         <button class="red-button">Kursy</button>
 
         <template v-if="isLogged">
-          <template v-if="user.role === 'admin'">
-            <button
-              class="red-button"
-              @click="goToAdminPanel"
-            >
-              Panel Admina
-            </button>
-          </template>
-
           <button class="red-button">Profil</button>
           <button
             class="red-button"
@@ -209,6 +199,7 @@ const { logout } = userStore;
   cursor: pointer;
   transition: background 0.3s;
   margin-right: 20px;
+  text-align: center;
 }
 
 .red-button:hover {

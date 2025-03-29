@@ -4,16 +4,17 @@ import { ref } from "vue";
 definePageMeta({
   layout: "login",
   middleware: ["auth", "admin-auth"],
+  pagePermissions: ["PANEL_SHOW_ADMIN_PANEL"],
 });
 </script>
 
 <template>
   <AdminNavbar />
   <div class="welcome-section">
-    <h1>Witaj w Panelu Administratora!</h1>
+    <h1>Zarządzaj stroną CourseFlow!</h1>
     <p class="welcome-text">
-      Tutaj masz pełną kontrolę nad platformą. Zarządzaj kursami, użytkownikami
-      i innymi ważnymi ustawieniami.
+      Tutaj masz kontrolę nad platformą. Zarządzaj kursami, użytkownikami i
+      innymi ważnymi ustawieniami.
     </p>
   </div>
 </template>

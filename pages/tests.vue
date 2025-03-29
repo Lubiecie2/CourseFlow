@@ -2,6 +2,7 @@
 definePageMeta({
   middleware: ["auth", "admin-auth"],
   layout: "login",
+  pagePermissions: ["PANEL_SHOW_TESTS"],
 });
 </script>
 

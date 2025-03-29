@@ -5,6 +5,7 @@ import { nextTick } from "vue";
 definePageMeta({
   layout: "login",
   middleware: ["auth", "admin-auth"],
+  pagePerrmissions: ["PANEL_CREATE_ROLE"],
 });
 
 const roleName = ref("");
@@ -13,6 +14,8 @@ const selectedPermissions = ref([]);
 const editRoleName = ref("");
 const editSelectedPermissions = ref([]);
 const selectedRole = ref(null);
+const createSuccessMessage = ref("");
+const updateSuccessMessage = ref("");
 
 // --------- TWORZENIE ROLI --------------------------------------------------
 
@@ -35,6 +38,7 @@ const createRole = async (roleName, permissions) => {
     });
 
     console.log("Rola została utworzona pomyślnie:", data);
+    createSuccessMessage.value = "Rola została utworzona pomyślnie!";
   } catch (err) {
     console.error("Błąd przy tworzeniu roli:", err);
   }
@@ -107,6 +111,11 @@ const updateRole = async () => {
     );
 
     console.log("Rola została zaktualizowana pomyślnie:", data);
+    updateSuccessMessage.value = "Rola została zaktualizowana pomyślnie!";
+
+    setTimeout(() => {
+      updateSuccessMessage.value = "";
+    }, 5000);
   } catch (err) {
     console.error("Błąd przy aktualizacji roli:", err);
   }
@@ -124,16 +133,26 @@ const sendUpdateRole = async () => {
     console.log("Nowe uprawnienia:", editSelectedPermissions.value);
 
     await updateRole();
+
+    clearForm();
   } catch (err) {
     console.error("Błąd przy wysyłaniu aktualizacji roli:", err);
   }
+};
+
+const translatePermissions = {
+  PANEL_SHOW_USERS_LIST: "Zarządzanie użytkownikami",
+  PANEL_EDIT_USERS: "Edytowanie użytkowników",
+  PANEL_SHOW_TESTS: "Zarządzanie testami",
+  PANEL_SHOW_COURSES: "Zarządzanie kursami",
+  PANEL_SHOW_ADMIN_PANEL: "Zarządzanie stroną",
 };
 </script>
 
 <template>
   <div>
     <adminNavbar></adminNavbar>
-    <BottomNavbar></BottomNavbar>
+    <BottomNavbar v-if="usePermissionGuard('PANEL_CREATE_ROLE')"></BottomNavbar>
 
     <div class="addrole-container">
       <div class="addrole">
@@ -158,9 +177,16 @@ const sendUpdateRole = async () => {
             />
             <span class="slider"></span>
           </label>
-          <span class="permission-name">{{ perm.name }}</span>
+          <span class="permission-name">{{
+            translatePermissions[perm.name]
+          }}</span>
         </div>
-
+        <p
+          v-if="createSuccessMessage"
+          class="success-message create-message"
+        >
+          {{ createSuccessMessage }}
+        </p>
         <button
           @click="handleSubmit()"
           class="red-button"
@@ -193,9 +219,16 @@ const sendUpdateRole = async () => {
             />
             <span class="slider"></span>
           </label>
-          <span class="permission-name">{{ perm.name }}</span>
+          <span class="permission-name">{{
+            translatePermissions[perm.name]
+          }}</span>
         </div>
-
+        <p
+          v-if="updateSuccessMessage"
+          class="success-message update-message"
+        >
+          {{ updateSuccessMessage }}
+        </p>
         <button
           @click="sendUpdateRole()"
           class="red-button"
@@ -233,7 +266,6 @@ const sendUpdateRole = async () => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f0f0f0;
 }
 .addrole {
   height: 580px;
@@ -269,6 +301,7 @@ const sendUpdateRole = async () => {
 .role-list {
   width: 80%;
   font-size: 20px;
+  overflow-y: auto;
 }
 .role-list ul li {
   list-style: none;
@@ -385,5 +418,19 @@ h2 {
   color: black;
   margin-bottom: 10px;
   text-align: center;
+}
+
+.success-message {
+  text-align: center;
+  font-size: 16px;
+
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.create-message,
+.update-message {
+  color: rgb(7, 156, 7);
 }
 </style>

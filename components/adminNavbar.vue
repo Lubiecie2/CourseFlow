@@ -36,8 +36,8 @@ const { logout } = userStore;
         />
         <span class="break-line" />
         <p class="logo-text">
-          Panel <br />
-          Administratora
+          Zarządzaj <br />
+          Stroną CourseFlow
         </p>
       </div>
 
@@ -45,6 +45,7 @@ const { logout } = userStore;
         <button
           class="red-button"
           @click="goToCourses"
+          v-if="usePermissionGuard('PANEL_SHOW_COURSES')"
         >
           Lista kursów
         </button>
@@ -58,6 +59,7 @@ const { logout } = userStore;
         <button
           class="red-button"
           @click="goToTests"
+          v-if="usePermissionGuard('PANEL_SHOW_TESTS')"
         >
           Testy
         </button>

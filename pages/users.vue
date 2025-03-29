@@ -2,6 +2,7 @@
 definePageMeta({
   middleware: ["auth", "admin-auth"],
   layout: "login",
+  pagePerrmissions: ["PANEL_SHOW_USERS_LIST"],
 });
 
 const { data: users, error, refresh } = await useApiServer("admin/users");
