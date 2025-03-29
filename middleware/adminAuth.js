@@ -1,7 +1,15 @@
 export default defineNuxtRouteMiddleware((to, from) => {
   const user = useUserStore();
 
-  if (user.user.role !== "admin") {
-    return navigateTo("/");
+  const pagePermissions = to.meta.pagePermissions || [];
+
+  const hasAllPagePermissions = pagePermissions.every((permission) =>
+    user.user.permissions.includes(permission)
+  );
+
+  if (pagePermissions.length > 0) {
+    if (!hasAllPagePermissions) {
+      return navigateTo("/");
+    }
   }
 });

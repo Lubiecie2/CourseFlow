@@ -11,8 +11,7 @@ const password = ref("");
 const errorMessage = ref("");
 const onSubmit = async () => {
   try {
-    const response = await $fetch("/auth/login", {
-      baseURL: "http://localhost:4000/api",
+    const response = await useApiFrontend("/auth/login", {
       method: "POST",
       body: {
         email: email.value,
@@ -88,12 +87,12 @@ const onSubmit = async () => {
             >
               {{ errorMessage }}
             </p>
-            <button
+            <!-- <button
               class="remember-button"
               type="submit"
             >
               Nie pamiętam hasła
-            </button>
+            </button> -->
             <div class="submit-button-container">
               <button
                 class="submit-button"

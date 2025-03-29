@@ -3,7 +3,7 @@ definePageMeta({
   middleware: "auth",
 });
 
-const { data: user } = useAPI("auth/me");
+const { data: user } = await useApiServer("auth/me");
 </script>
 
 <template>

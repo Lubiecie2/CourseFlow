@@ -39,8 +39,7 @@ const onSubmit = async () => {
   }
 
   try {
-    await $fetch("/auth/register", {
-      baseURL: "http://localhost:4000/api",
+    await useApiFrontend("/auth/register", {
       method: "POST",
       body: {
         email: email.value,

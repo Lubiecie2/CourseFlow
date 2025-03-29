@@ -3,14 +3,9 @@ export const useUserStore = defineStore("user", () => {
 
   const fetchUser = async () => {
     try {
-      const { data } = await useAPI("/auth/me");
+      const { data } = await useApiServer("/auth/me");
       if (data.value) {
-        user.value = {
-          email: data.value.email,
-          firstName: data.value.firstName,
-          lastName: data.value.lastName,
-          role: data.value.role,
-        };
+        user.value = data.value;
       }
 
       return user.value;

@@ -4,7 +4,7 @@ definePageMeta({
   layout: "login",
 });
 
-const { data: users, error, refresh } = await useAPI("admin/users");
+const { data: users, error, refresh } = await useApiServer("admin/users");
 let editingUserId = null;
 let userToDelete = null;
 const searchQuery = ref("");
@@ -48,7 +48,7 @@ const cancelEdit = (user) => {
 
 const changeUserRole = async (userId, newRole) => {
   try {
-    await useAPI(`admin/users/${userId}/role`, {
+    await useApiFrontend(`admin/users/${userId}/role`, {
       method: "PATCH",
       body: { role: newRole },
     });
@@ -71,7 +71,9 @@ const cancelDelete = () => {
 const deleteUser = async () => {
   if (userToDelete) {
     try {
-      await useAPI(`admin/users/${userToDelete.id}`, { method: "DELETE" });
+      await useApiFrontend(`admin/users/${userToDelete.id}`, {
+        method: "DELETE",
+      });
       users.value = users.value.filter((user) => user.id !== userToDelete.id);
       userToDelete = null;
       showDeleteDialog.value = false;
@@ -86,6 +88,7 @@ const showDeleteDialog = ref(false);
 
 <template>
   <AdminNavbar />
+  <bottomNavbar />
   <div class="container">
     <h1 class="page-title">Lista Użytkowników</h1>
 
@@ -93,7 +96,7 @@ const showDeleteDialog = ref(false);
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="Szukaj użytkowników po emailu, imieniu lub nazwisku"
+        placeholder="Szukaj użytkowników po emailu"
         class="search-input"
         @input="searchUsers"
       />
@@ -113,7 +116,10 @@ const showDeleteDialog = ref(false);
       <p>Ładowanie danych...</p>
     </div>
 
-    <div v-else>
+    <div
+      v-else
+      class="user-table-container"
+    >
       <table class="user-table">
         <thead>
           <tr>
@@ -211,6 +217,7 @@ const showDeleteDialog = ref(false);
       </div>
     </div>
   </div>
+  <foter></foter>
 </template>
 
 <style scoped>
@@ -219,6 +226,13 @@ const showDeleteDialog = ref(false);
   margin: 0 auto;
   padding: 20px;
   text-align: center;
+}
+
+.user-table-container {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  margin-bottom: 200px;
 }
 
 .page-title {
