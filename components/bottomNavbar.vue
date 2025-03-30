@@ -8,11 +8,13 @@
           <NuxtLink
             to="/users"
             class="red-button"
+            v-if="usePermissionGuard('PANEL_CREATE_ROLE')"
             >Użytkownicy</NuxtLink
           >
           <NuxtLink
             to="/role"
             class="red-button"
+            v-if="usePermissionGuard('PANEL_CREATE_ROLE')"
             >Role</NuxtLink
           >
         </div>

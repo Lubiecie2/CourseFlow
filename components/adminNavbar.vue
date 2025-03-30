@@ -89,18 +89,21 @@ const { logout } = userStore;
         <button
           class="red-button"
           @click="goToCourses"
+          v-if="usePermissionGuard('PANEL_SHOW_COURSES')"
         >
           Lista kursów
         </button>
         <button
           class="red-button"
           @click="goToUsers"
+          v-if="usePermissionGuard('PANEL_SHOW_USERS_LIST')"
         >
           Zarządzaj użytkownikami
         </button>
         <button
           class="red-button"
           @click="goToTests"
+          v-if="usePermissionGuard('PANEL_SHOW_TESTS')"
         >
           Testy
         </button>

@@ -2,10 +2,12 @@
 definePageMeta({
   middleware: ["auth", "admin-auth"],
   layout: "login",
-  pagePerrmissions: ["PANEL_SHOW_USERS_LIST"],
+  pagePermissions: ["PANEL_SHOW_USERS"],
 });
+console.log("Uprawnienia użytkownika:", useUserStore().user.permissions);
 
 const { data: users, error, refresh } = await useApiServer("admin/users");
+console.log("Użytkownicy:", users.value);
 let editingUserId = null;
 let userToDelete = null;
 const searchQuery = ref("");

@@ -5,17 +5,18 @@ import { nextTick } from "vue";
 definePageMeta({
   layout: "login",
   middleware: ["auth", "admin-auth"],
-  pagePerrmissions: ["PANEL_CREATE_ROLE"],
+  pagePermissions: ["PANEL_CREATE_ROLE", "PANEL_SHOW_USERS"],
 });
 
 const roleName = ref("");
 const selectedPermissions = ref([]);
-
 const editRoleName = ref("");
 const editSelectedPermissions = ref([]);
 const selectedRole = ref(null);
 const createSuccessMessage = ref("");
 const updateSuccessMessage = ref("");
+const forbiddenRoles = ["admin", "user"];
+const errorMessage = ref("");
 
 // --------- TWORZENIE ROLI --------------------------------------------------
 
@@ -39,6 +40,9 @@ const createRole = async (roleName, permissions) => {
 
     console.log("Rola została utworzona pomyślnie:", data);
     createSuccessMessage.value = "Rola została utworzona pomyślnie!";
+    setTimeout(() => {
+      createSuccessMessage.value = "";
+    }, 5000);
   } catch (err) {
     console.error("Błąd przy tworzeniu roli:", err);
   }
@@ -50,10 +54,21 @@ const handleSubmit = async () => {
     return;
   }
 
+  if (forbiddenRoles.includes(roleName.value.toLowerCase())) {
+    console.error("Błąd: Nie można utworzyć tej roli!");
+    errorMessage.value = "Nie można utworzyć tej roli!";
+    setTimeout(() => {
+      errorMessage.value = "";
+    }, 5000);
+    return;
+  }
+
   console.log("Nazwa roli:", roleName.value);
   console.log("Wybrane uprawnienia:", selectedPermissions.value);
 
   await createRole(roleName.value, selectedPermissions.value);
+
+  window.location.reload();
 
   clearForm();
 };
@@ -64,6 +79,7 @@ const handleSubmit = async () => {
 const { data: roles } = await useApiServer("role/getrole", {
   method: "GET",
 });
+console.log("Rola:", roles);
 // --------- KONIEC POBIERANIE RÓL --------------------------------------------------
 
 // --------- POBIERANIE UPRAWNIEŃ --------------------------------------------------
@@ -134,6 +150,7 @@ const sendUpdateRole = async () => {
 
     await updateRole();
 
+    window.location.reload();
     clearForm();
   } catch (err) {
     console.error("Błąd przy wysyłaniu aktualizacji roli:", err);
@@ -146,6 +163,8 @@ const translatePermissions = {
   PANEL_SHOW_TESTS: "Zarządzanie testami",
   PANEL_SHOW_COURSES: "Zarządzanie kursami",
   PANEL_SHOW_ADMIN_PANEL: "Zarządzanie stroną",
+  PANEL_CREATE_ROLE: "Tworzenie ról",
+  PANEL_SHOW_USERS: "Dostęp do panelu użytkowników",
 };
 </script>
 
@@ -153,7 +172,6 @@ const translatePermissions = {
   <div>
     <adminNavbar></adminNavbar>
     <BottomNavbar v-if="usePermissionGuard('PANEL_CREATE_ROLE')"></BottomNavbar>
-
     <div class="addrole-container">
       <div class="addrole">
         <h2>Dodaj nową rolę</h2>
@@ -186,6 +204,12 @@ const translatePermissions = {
           class="success-message create-message"
         >
           {{ createSuccessMessage }}
+        </p>
+        <p
+          v-if="errorMessage"
+          class="error-message"
+        >
+          {{ errorMessage }}
         </p>
         <button
           @click="handleSubmit()"
@@ -423,12 +447,16 @@ h2 {
 .success-message {
   text-align: center;
   font-size: 16px;
-
   margin-top: 20px;
   padding: 10px;
   border-radius: 5px;
 }
-
+.error-message {
+  color: red;
+  font-size: 16px;
+  margin-top: 10px;
+  text-align: center;
+}
 .create-message,
 .update-message {
   color: rgb(7, 156, 7);

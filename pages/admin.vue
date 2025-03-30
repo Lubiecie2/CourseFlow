@@ -6,6 +6,7 @@ definePageMeta({
   middleware: ["auth", "admin-auth"],
   pagePermissions: ["PANEL_SHOW_ADMIN_PANEL"],
 });
+console.log("Uprawnienia użytkownika:", useUserStore().user.permissions);
 </script>
 
 <template>
