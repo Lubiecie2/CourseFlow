@@ -4,10 +4,8 @@ definePageMeta({
   layout: "login",
   pagePermissions: ["PANEL_SHOW_USERS"],
 });
-console.log("Uprawnienia użytkownika:", useUserStore().user.permissions);
 
 const { data: users, error, refresh } = await useApiServer("admin/users");
-const { data: roles, error: rolesError } = await useApiServer("admin/roles");
 let editingUserId = null;
 let userToDelete = null;
 const searchQuery = ref("");
@@ -113,16 +111,6 @@ const showDeleteDialog = ref(false);
     </div>
 
     <div
-      v-if="rolesError"
-      class="error"
-    >
-      <p>
-        Wystąpił błąd podczas ładowania ról:
-        {{ rolesError.message || rolesError }}
-      </p>
-    </div>
-
-    <div
       v-else-if="!users"
       class="loading"
     >
@@ -160,13 +148,8 @@ const showDeleteDialog = ref(false);
                 v-if="user.editingRole"
                 class="role-select"
               >
-                <option
-                  v-for="role in roles"
-                  :key="role.id"
-                  :value="role.name"
-                >
-                  {{ role.name }}
-                </option>
+                <option value="user">user</option>
+                <option value="admin">admin</option>
               </select>
             </td>
             <td>
