@@ -42,7 +42,7 @@ const createRole = async (roleName, permissions) => {
     createSuccessMessage.value = "Rola została utworzona pomyślnie!";
     setTimeout(() => {
       createSuccessMessage.value = "";
-    }, 5000);
+    }, 10000);
   } catch (err) {
     console.error("Błąd przy tworzeniu roli:", err);
   }
@@ -57,6 +57,7 @@ const handleSubmit = async () => {
   if (forbiddenRoles.includes(roleName.value.toLowerCase())) {
     console.error("Błąd: Nie można utworzyć tej roli!");
     errorMessage.value = "Nie można utworzyć tej roli!";
+    clearForm();
     setTimeout(() => {
       errorMessage.value = "";
     }, 5000);
@@ -76,17 +77,30 @@ const handleSubmit = async () => {
 
 // --------- POBIERANIE RÓL ---------------------------------------------------------
 
-const { data: roles } = await useApiServer("role/getrole", {
-  method: "GET",
-});
-console.log("Rola:", roles);
+const { data: roles, error: getRoleError } = await useApiServer(
+  "role/getrole",
+  {
+    method: "GET",
+  }
+);
+
+if (getRoleError.value) {
+  console.error("Błąd pobierania uprawnień:", getRoleError.value);
+  throw createError({
+    statusCode: 500,
+    message: "Błąd pobierania ról",
+    fatal: true,
+  });
+}
 // --------- KONIEC POBIERANIE RÓL --------------------------------------------------
 
 // --------- POBIERANIE UPRAWNIEŃ --------------------------------------------------
-const { data: permissions, error } = await useApiServer("/role/permissions");
+const { data: permissions, error: permissionsError } = await useApiServer(
+  "/role/permissions"
+);
 
-if (error.value) {
-  console.error("Błąd pobierania uprawnień:", error.value);
+if (permissionsError.value) {
+  console.error("Błąd pobierania uprawnień:", permissionsError.value);
 }
 
 // --------- KONIEC POBIERANIE UPRAWNIEŃ --------------------------------------------------

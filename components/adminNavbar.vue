@@ -52,7 +52,7 @@ const { logout } = userStore;
         <button
           class="red-button"
           @click="goToUsers"
-          v-if="usePermissionGuard('PANEL_SHOW_USERS_LIST')"
+          v-if="usePermissionGuard('PANEL_SHOW_USERS')"
         >
           Zarządzaj użytkownikami
         </button>
