@@ -5,17 +5,34 @@ definePageMeta({
   pagePermissions: ["PANEL_SHOW_USERS"],
 });
 
-const { data: users, error, refresh } = await useApiServer("admin/users");
+const usersData = ref(null);
+const error = ref(null);
+const loading = ref(true);
+const showDeleteDialog = ref(false);
 let editingUserId = null;
 let userToDelete = null;
 const searchQuery = ref("");
 
-const filteredUsers = computed(() => {
-  if (!searchQuery.value) {
-    return users.value;
+try {
+  const { data, error: apiError } = await useApiServer("admin/users");
+  if (apiError.value) {
+    throw apiError.value;
   }
+  usersData.value = data.value;
+} catch (err) {
+  console.error("Błąd ładowania użytkowników:", err);
+  error.value = err;
+} finally {
+  loading.value = false;
+}
+
+const users = computed(() => usersData.value?.users ?? []);
+const roles = computed(() => usersData.value?.roles ?? []);
+
+const filteredUsers = computed(() => {
+  if (!searchQuery.value) return users.value;
   return users.value.filter((user) =>
-    user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+    user.email?.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
 
@@ -53,7 +70,11 @@ const changeUserRole = async (userId, newRole) => {
       method: "PATCH",
       body: { role: newRole },
     });
-    await refresh();
+
+    const updatedUser = users.value.find((u) => u.id === userId);
+    if (updatedUser) {
+      updatedUser.role = newRole;
+    }
   } catch (err) {
     console.error("Błąd zmiany roli:", err);
   }
@@ -75,7 +96,9 @@ const deleteUser = async () => {
       await useApiFrontend(`admin/users/${userToDelete.id}`, {
         method: "DELETE",
       });
-      users.value = users.value.filter((user) => user.id !== userToDelete.id);
+      usersData.value.users = usersData.value.users.filter(
+        (user) => user.id !== userToDelete.id
+      );
       userToDelete = null;
       showDeleteDialog.value = false;
     } catch (err) {
@@ -83,8 +106,6 @@ const deleteUser = async () => {
     }
   }
 };
-
-const showDeleteDialog = ref(false);
 </script>
 
 <template>
@@ -108,6 +129,16 @@ const showDeleteDialog = ref(false);
       class="error"
     >
       <p>Wystąpił błąd: {{ error.message || error }}</p>
+    </div>
+
+    <div
+      v-if="rolesError"
+      class="error"
+    >
+      <p>
+        Wystąpił błąd podczas ładowania ról:
+        {{ rolesError.message || rolesError }}
+      </p>
     </div>
 
     <div
@@ -148,8 +179,13 @@ const showDeleteDialog = ref(false);
                 v-if="user.editingRole"
                 class="role-select"
               >
-                <option value="user">user</option>
-                <option value="admin">admin</option>
+                <option
+                  v-for="role in roles"
+                  :key="role.id"
+                  :value="role.name"
+                >
+                  {{ role.name }}
+                </option>
               </select>
             </td>
             <td>
