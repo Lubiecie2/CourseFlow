@@ -130,7 +130,7 @@ const { logout } = userStore;
   </div>
 </template>
 
-<style>
+<style scoped>
 .navbar {
   width: 100%;
   height: 120px;

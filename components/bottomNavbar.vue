@@ -34,6 +34,10 @@
 .button-container {
   margin-right: 10vh;
 }
+.nav-buttom {
+  display: flex;
+  gap: 20px;
+}
 .red-button {
   background-color: #eb5757;
   color: white;
