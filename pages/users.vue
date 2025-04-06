@@ -254,7 +254,6 @@ const deleteUser = async () => {
       </div>
     </div>
   </div>
-  <foter></foter>
 </template>
 
 <style scoped>

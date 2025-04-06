@@ -6,9 +6,6 @@ definePageMeta({
   middleware: ["auth", "admin-auth"],
   layout: "login",
 });
-
-const { data: course } = await useFetch(`/api/courses/${courseId}`);
-provide("courseData", course);
 </script>
 
 <template>
@@ -19,11 +16,10 @@ provide("courseData", course);
 
       <nav class="sidebar-nav">
         <NuxtLink
-          :to="`/editCourse/${courseId}/editCard`"
+          :to="`/editCourse/${courseId}/`"
           class="nav-item"
-          active-class="active"
+          exact-active-class="active"
         >
-          <span class="nav-icon">📝</span>
           <span class="nav-text">Wizytówka kursu</span>
         </NuxtLink>
 
@@ -32,7 +28,6 @@ provide("courseData", course);
           class="nav-item"
           active-class="active"
         >
-          <span class="nav-icon">📚</span>
           <span class="nav-text">Sekcje kursu</span>
         </NuxtLink>
 
@@ -41,7 +36,6 @@ provide("courseData", course);
           class="nav-item"
           active-class="active"
         >
-          <span class="nav-icon">✓</span>
           <span class="nav-text">Quizy i testy</span>
         </NuxtLink>
 
@@ -50,7 +44,6 @@ provide("courseData", course);
           class="nav-item"
           active-class="active"
         >
-          <span class="nav-icon">⚙️</span>
           <span class="nav-text">Ustawienia</span>
         </NuxtLink>
       </nav>
@@ -75,7 +68,6 @@ provide("courseData", course);
   border-right: 1px solid #e9ecef;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .sidebar-title {
@@ -111,7 +103,6 @@ provide("courseData", course);
 .nav-item.active {
   background-color: #f8f9fa;
   color: #dc3545;
-  border-left-color: #dc3545;
   font-weight: 500;
 }
 

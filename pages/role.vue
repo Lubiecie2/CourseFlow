@@ -27,6 +27,9 @@ const clearForm = () => {
 
 const createRole = async (roleName, permissions) => {
   try {
+    console.log("roleName:", roleName);
+    console.log("permissions:", permissions);
+
     const data = await useApiFrontend("role/createrole", {
       method: "POST",
       body: {
@@ -35,6 +38,7 @@ const createRole = async (roleName, permissions) => {
       },
     });
 
+    console.log("Rola została utworzona pomyślnie:", data);
     createSuccessMessage.value = "Rola została utworzona pomyślnie!";
     setTimeout(() => {
       createSuccessMessage.value = "";
@@ -60,6 +64,9 @@ const handleSubmit = async () => {
     return;
   }
 
+  console.log("Nazwa roli:", roleName.value);
+  console.log("Wybrane uprawnienia:", selectedPermissions.value);
+
   await createRole(roleName.value, selectedPermissions.value);
 
   window.location.reload();
@@ -76,17 +83,14 @@ const { data: roles, error: getRoleError } = await useApiServer(
     method: "GET",
   }
 );
+
 if (getRoleError.value) {
-  if (getRoleError.value.status === 404) {
-    console.error("Nie znaleziono ról:", getRoleError.value);
-  } else {
-    console.error("Błąd pobierania uprawnień:", getRoleError.value);
-    throw createError({
-      statusCode: 500,
-      message: "Błąd pobierania ról",
-      fatal: true,
-    });
-  }
+  console.error("Błąd pobierania uprawnień:", getRoleError.value);
+  throw createError({
+    statusCode: 500,
+    message: "Błąd pobierania ról",
+    fatal: true,
+  });
 }
 // --------- KONIEC POBIERANIE RÓL --------------------------------------------------
 
@@ -118,6 +122,9 @@ const updateRole = async () => {
     return;
   }
 
+  console.log("Nazwa roli:", editRoleName.value);
+  console.log("Wybrane uprawnienia:", editSelectedPermissions.value);
+
   try {
     const data = await useApiFrontend(
       `/role/updaterole/${selectedRole.value.id}`,
@@ -133,6 +140,7 @@ const updateRole = async () => {
       }
     );
 
+    console.log("Rola została zaktualizowana pomyślnie:", data);
     updateSuccessMessage.value = "Rola została zaktualizowana pomyślnie!";
 
     setTimeout(() => {
@@ -150,6 +158,9 @@ const sendUpdateRole = async () => {
       console.error("Błąd: Nazwa roli jest pusta!");
       return;
     }
+
+    console.log("Aktualizowana rola:", editRoleName.value);
+    console.log("Nowe uprawnienia:", editSelectedPermissions.value);
 
     await updateRole();
 
@@ -175,180 +186,111 @@ const translatePermissions = {
   <div>
     <adminNavbar></adminNavbar>
     <BottomNavbar v-if="usePermissionGuard('PANEL_CREATE_ROLE')"></BottomNavbar>
+    <div class="addrole-container">
+      <div class="addrole">
+        <h2>Dodaj nową rolę</h2>
+        <input
+          v-model="roleName"
+          placeholder="Nazwa roli"
+          class="role-input"
+        />
 
-    <div class="role-management-container">
-      <div class="card">
-        <div class="card-header">
-          <h2>Dodaj nową rolę</h2>
-          <div class="header-underline"></div>
-        </div>
-
-        <div class="card-body">
-          <div class="input-group">
-            <label for="new-role-name">Nazwa roli</label>
+        <div
+          v-for="perm in permissions"
+          :key="perm.id"
+          class="permission-item"
+        >
+          <label class="toggle-switch">
             <input
-              id="new-role-name"
-              v-model="roleName"
-              placeholder="Wprowadź nazwę roli"
-              class="form-input"
+              type="checkbox"
+              class="toggle-checkbox"
+              :value="perm.id"
+              v-model="selectedPermissions"
             />
-          </div>
-
-          <div class="permissions-list">
-            <h3>Wybierz uprawnienia</h3>
-            <div class="permissions-grid">
-              <div
-                v-for="perm in permissions"
-                :key="perm.id"
-                class="permission-item"
-              >
-                <label class="toggle-container">
-                  <div class="toggle-label">
-                    {{ translatePermissions[perm.name] }}
-                  </div>
-                  <div class="toggle-switch">
-                    <input
-                      type="checkbox"
-                      class="toggle-checkbox"
-                      :value="perm.id"
-                      v-model="selectedPermissions"
-                    />
-                    <span class="toggle-slider"></span>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="message-container">
-            <p
-              v-if="createSuccessMessage"
-              class="success-message"
-            >
-              <i class="success-icon">✓</i> {{ createSuccessMessage }}
-            </p>
-            <p
-              v-if="errorMessage"
-              class="error-message"
-            >
-              <i class="error-icon">!</i> {{ errorMessage }}
-            </p>
-          </div>
-
-          <button
-            @click="handleSubmit()"
-            class="btn-primary"
-          >
-            Zapisz rolę
-          </button>
+            <span class="slider"></span>
+          </label>
+          <span class="permission-name">{{
+            translatePermissions[perm.name]
+          }}</span>
         </div>
+        <p
+          v-if="createSuccessMessage"
+          class="success-message create-message"
+        >
+          {{ createSuccessMessage }}
+        </p>
+        <p
+          v-if="errorMessage"
+          class="error-message"
+        >
+          {{ errorMessage }}
+        </p>
+        <button
+          @click="handleSubmit()"
+          class="red-button"
+        >
+          Zapisz rolę
+        </button>
+      </div>
+    </div>
+    <div class="role-container">
+      <div class="leftroles-section">
+        <h2>Edytuj rolę</h2>
+        <p>Wybierz istniejącą rolę z listy po prawej</p>
+        <input
+          v-model="editRoleName"
+          placeholder="Nazwa roli"
+          class="role-input"
+        />
+
+        <div
+          v-for="perm in permissions"
+          :key="perm.id"
+          class="permission-item"
+        >
+          <label class="toggle-switch">
+            <input
+              type="checkbox"
+              class="toggle-checkbox"
+              :value="perm.id"
+              v-model="editSelectedPermissions"
+            />
+            <span class="slider"></span>
+          </label>
+          <span class="permission-name">{{
+            translatePermissions[perm.name]
+          }}</span>
+        </div>
+        <p
+          v-if="updateSuccessMessage"
+          class="success-message update-message"
+        >
+          {{ updateSuccessMessage }}
+        </p>
+        <button
+          @click="sendUpdateRole()"
+          class="red-button"
+        >
+          Zapisz zmiany
+        </button>
       </div>
 
-      <div class="roles-editor-container">
-        <div class="card">
-          <div class="card-header">
-            <h2>Edytuj rolę</h2>
-            <div class="header-underline"></div>
-          </div>
-
-          <div class="card-body">
-            <div class="role-editor-flex">
-              <div class="role-editor-form">
-                <p class="select-info">
-                  {{
-                    selectedRole
-                      ? `Edytujesz: ${selectedRole.name}`
-                      : "Wybierz rolę z listy"
-                  }}
-                </p>
-
-                <div class="input-group">
-                  <label for="edit-role-name">Nazwa roli</label>
-                  <input
-                    id="edit-role-name"
-                    v-model="editRoleName"
-                    placeholder="Nazwa roli"
-                    class="form-input"
-                    :disabled="!selectedRole"
-                  />
-                </div>
-
-                <div
-                  class="permissions-list"
-                  v-if="selectedRole"
-                >
-                  <h3>Uprawnienia</h3>
-                  <div class="permissions-grid">
-                    <div
-                      v-for="perm in permissions"
-                      :key="perm.id"
-                      class="permission-item"
-                    >
-                      <label class="toggle-container">
-                        <div class="toggle-label">
-                          {{ translatePermissions[perm.name] }}
-                        </div>
-                        <div class="toggle-switch">
-                          <input
-                            type="checkbox"
-                            class="toggle-checkbox"
-                            :value="perm.id"
-                            v-model="editSelectedPermissions"
-                          />
-                          <span class="toggle-slider"></span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="message-container">
-                  <p
-                    v-if="updateSuccessMessage"
-                    class="success-message"
-                  >
-                    <i class="success-icon">✓</i> {{ updateSuccessMessage }}
-                  </p>
-                </div>
-
-                <button
-                  @click="sendUpdateRole()"
-                  class="btn-primary"
-                  :disabled="!selectedRole"
-                >
-                  Zapisz zmiany
-                </button>
-              </div>
-
-              <div class="role-list-container">
-                <h3>Wszystkie role</h3>
-                <div class="role-list">
-                  <div
-                    v-if="roles.length > 0"
-                    class="role-items"
-                  >
-                    <div
-                      v-for="role in roles"
-                      :key="role.id"
-                      @click="handleRoleClick(role)"
-                      class="role-item"
-                      :class="{
-                        active: selectedRole && selectedRole.id === role.id,
-                      }"
-                    >
-                      {{ role.name }}
-                    </div>
-                  </div>
-                  <div
-                    v-else
-                    class="empty-roles"
-                  >
-                    <p>Brak dostępnych ról.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div class="rightroles-section">
+        <h2>Wszystkie role</h2>
+        <div class="role-list">
+          <ul v-if="roles.length > 0">
+            <li
+              v-for="role in roles"
+              :key="role.id"
+              @click="handleRoleClick(role)"
+              class="role-item"
+            >
+              {{ role.name }}
+            </li>
+          </ul>
+          <ul v-if="roles.length === 0">
+            <li>Brak dostępnych ról.</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -357,314 +299,180 @@ const translatePermissions = {
 </template>
 
 <style scoped>
-.role-management-container {
-  max-width: 1200px;
-  margin: 50px auto;
-  padding: 0 20px;
+.addrole-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
-
-.card {
+.addrole {
+  height: 580px;
+  width: 600px;
   background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  margin-bottom: 40px;
-  overflow: hidden;
+  margin: 0 40px;
+  margin-bottom: 200px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-
-.card-header {
-  background-color: #f8f9fa;
-  padding: 20px 25px;
-  border-bottom: 1px solid #eee;
+.role-container {
+  display: flex;
+  justify-content: center;
+  gap: 100px;
+  width: 100%;
+  margin-top: 100px;
 }
-
-.card-header h2 {
-  margin: 0;
-  color: #333;
-  font-size: 22px;
+.rightroles-section {
+  height: 580px;
+  width: 400px;
+  background-color: white;
+  margin: 0 40px;
+  margin-bottom: 200px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-
-.header-underline {
-  height: 3px;
-  width: 60px;
-  background: linear-gradient(90deg, #e74c3c, #f39c12);
+.role-list {
+  width: 80%;
+  font-size: 20px;
+  overflow-y: auto;
+}
+.role-list ul li {
+  list-style: none;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.role-list ul li:hover {
+  color: #eb5757;
+  transition: color 0.3s;
+}
+.leftroles-section {
+  height: 580px;
+  width: 600px;
+  background-color: white;
+  margin: 0 40px;
+  margin-bottom: 200px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.role-input {
   margin-top: 10px;
-}
-
-.card-body {
-  padding: 25px;
-}
-
-.input-group {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  width: 80%;
   margin-bottom: 20px;
 }
-
-.input-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #444;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  border-color: #e74c3c;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-}
-
-.form-input::placeholder {
-  color: #aaa;
-}
-
 .permissions-list {
-  margin: 25px 0;
-}
-
-.permissions-list h3 {
-  font-size: 18px;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.permissions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 15px;
-}
-
-.permission-item {
-  margin-bottom: 5px;
-}
-
-.toggle-container {
+  margin-top: 30px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 80%;
+}
+.permission-item {
+  display: flex;
+  margin-top: 10px;
   align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  padding: 10px;
-  border-radius: 6px;
-  background-color: #f8f9fa;
-  transition: background-color 0.2s;
+  gap: 10px;
+  margin-bottom: 8px;
+  width: 80%;
+  justify-content: flex-start;
 }
-
-.toggle-container:hover {
-  background-color: #eee;
-}
-
-.toggle-label {
-  flex-grow: 1;
-  font-size: 14px;
-  color: #444;
-}
-
 .toggle-switch {
   position: relative;
-  width: 50px;
-  height: 24px;
-  margin-left: 15px;
+  width: 40px;
+  height: 15px;
 }
-
 .toggle-checkbox {
   opacity: 0;
   width: 0;
   height: 0;
-}
-
-.toggle-slider {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  border-radius: 24px;
-  transition: 0.4s;
 }
 
-.toggle-slider:before {
+.slider {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: #ccc;
+  border-radius: 20px;
+  transition: 0.3s;
+  display: inline-block;
+}
+
+.slider::before {
   content: "";
   position: absolute;
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
+  width: 16px;
+  height: 16px;
+  background: white;
   border-radius: 50%;
-  transition: 0.4s;
+  top: 2px;
+  left: 2px;
+  transition: 0.3s;
 }
 
-.toggle-checkbox:checked + .toggle-slider {
-  background-color: #e74c3c;
+.toggle-checkbox:checked + .slider {
+  background-color: #eb5757;
 }
 
-.toggle-checkbox:checked + .toggle-slider:before {
-  transform: translateX(26px);
+.toggle-checkbox:checked + .slider::before {
+  transform: translateX(20px);
+}
+.red-button {
+  margin-bottom: 20px;
+  margin-top: auto;
+  background-color: #eb5757;
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
-.message-container {
-  margin: 20px 0;
-  min-height: 30px;
+.red-button:hover {
+  background-color: #c54242;
 }
-
-.success-message,
-.error-message {
-  padding: 12px 15px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  animation: fadeIn 0.3s;
+h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: black;
+  margin-bottom: 10px;
+  text-align: center;
 }
 
 .success-message {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.success-icon,
-.error-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  margin-right: 10px;
-  font-style: normal;
-  font-weight: bold;
-}
-
-.success-icon {
-  background-color: #155724;
-  color: white;
-}
-
-.error-icon {
-  background-color: #721c24;
-  color: white;
-}
-
-.btn-primary {
-  background: linear-gradient(90deg, #e74c3c, #c0392b);
-  color: white;
-  border: none;
-  padding: 12px 25px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-}
-
-.btn-primary:hover {
-  background: linear-gradient(90deg, #c0392b, #a93226);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
-}
-
-.btn-primary:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.roles-editor-container {
-  margin-top: 40px;
-}
-
-.role-editor-flex {
-  display: flex;
-  gap: 30px;
-}
-
-.role-editor-form {
-  flex: 2;
-}
-
-.role-list-container {
-  flex: 1;
-}
-
-.select-info {
-  margin-bottom: 15px;
-  font-style: italic;
-  color: #666;
-}
-
-.role-list {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.role-list h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 18px;
-  color: #333;
-}
-
-.role-item {
-  padding: 12px 15px;
-  margin-bottom: 8px;
-  background-color: white;
-  border-radius: 6px;
-  border-left: 3px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.role-item:hover {
-  border-left-color: #e74c3c;
-  background-color: #fff9f9;
-}
-
-.role-item.active {
-  border-left-color: #e74c3c;
-  background-color: #fff9f9;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-}
-
-.empty-roles {
-  padding: 20px;
   text-align: center;
-  color: #666;
+  font-size: 16px;
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: 5px;
 }
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.error-message {
+  color: red;
+  font-size: 16px;
+  margin-top: 10px;
+  text-align: center;
 }
-
-@media (max-width: 768px) {
-  .role-editor-flex {
-    flex-direction: column;
-  }
-
-  .permissions-grid {
-    grid-template-columns: 1fr;
-  }
+.create-message,
+.update-message {
+  color: rgb(7, 156, 7);
 }
 </style>

@@ -30,7 +30,7 @@ definePageMeta({
   position: relative;
   padding: 0 20px;
   text-align: center;
-  background-color: #c0bbbb;
+  background-color: #e0dfdf;
 }
 
 .welcome-section h1 {

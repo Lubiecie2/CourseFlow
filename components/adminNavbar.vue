@@ -20,6 +20,9 @@ const goToMainPage = () => {
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
+const goToCourseList = () => {
+  router.push("/courseList");
+};
 
 const userStore = useUserStore();
 const { user, isLogged } = storeToRefs(userStore);
@@ -42,6 +45,12 @@ const { logout } = userStore;
       </div>
 
       <div class="nav-button-container">
+        <button
+          class="red-button"
+          @click="goToCourseList"
+        >
+          Lista kursów
+        </button>
         <button
           class="red-button"
           @click="goToCourses"
@@ -87,10 +96,16 @@ const { logout } = userStore;
       >
         <button
           class="red-button"
+          @click="goToCourseList"
+        >
+          Lista kursów
+        </button>
+        <button
+          class="red-button"
           @click="goToCourses"
           v-if="usePermissionGuard('PANEL_SHOW_COURSES')"
         >
-          Lista kursów
+          Stwórz kurs
         </button>
         <button
           class="red-button"

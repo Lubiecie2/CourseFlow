@@ -22,7 +22,6 @@ const isSaving = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
 
-// Pobierz dane kursu
 const fetchCourseData = async () => {
   isLoading.value = true;
   errorMessage.value = "";
@@ -132,7 +131,6 @@ onMounted(fetchCourseData);
         <div class="underline-animated"></div>
       </div>
 
-      <!-- Komunikaty -->
       <div
         v-if="errorMessage"
         class="error-message"
@@ -147,11 +145,9 @@ onMounted(fetchCourseData);
         <span>✅</span> {{ successMessage }}
       </div>
 
-      <!-- Formularz -->
       <div class="form-group">
         <label for="course-title">Nazwa kursu</label>
         <div class="input-container">
-          <span class="input-icon">📚</span>
           <input
             id="course-title"
             v-model="course.title"
@@ -166,7 +162,6 @@ onMounted(fetchCourseData);
       <div class="form-group">
         <label for="course-category">Kategoria</label>
         <div class="input-container">
-          <span class="input-icon">📊</span>
           <select
             id="course-category"
             v-model="course.category"
@@ -224,7 +219,6 @@ onMounted(fetchCourseData);
       <div class="form-group">
         <label for="course-description">Opis kursu</label>
         <div class="input-container">
-          <span class="input-icon textarea-icon">📝</span>
           <textarea
             id="course-description"
             v-model="course.description"
@@ -246,11 +240,6 @@ onMounted(fetchCourseData);
             v-if="isSaving"
             class="loading-spinner"
             >⟳</span
-          >
-          <span
-            v-else
-            class="button-icon"
-            >💾</span
           >
           <span class="button-text">
             {{ isSaving ? "Zapisywanie..." : "Zapisz zmiany" }}
@@ -323,14 +312,10 @@ onMounted(fetchCourseData);
 }
 
 .error-message {
-  background-color: rgba(235, 87, 87, 0.1);
-  border-left: 3px solid #eb5757;
   color: #d64545;
 }
 
 .success-message {
-  background-color: rgba(39, 174, 96, 0.1);
-  border-left: 3px solid #27ae60;
   color: #27ae60;
 }
 
@@ -358,14 +343,9 @@ label {
   font-size: 18px;
 }
 
-.textarea-icon {
-  top: 18px;
-  transform: none;
-}
-
 .form-control {
   width: 100%;
-  padding: 13px 13px 13px 42px;
+  padding: 13px 13px 13px 13px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 16px;

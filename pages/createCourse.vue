@@ -1,4 +1,9 @@
 <script setup>
+definePageMeta({
+  layout: "login",
+  middleware: "auth",
+});
+
 import CourseCardFrom from "~/components/courseCardFrom.vue";
 
 definePageMeta({
@@ -20,52 +25,16 @@ const handleCourseCreated = (courseData) => {
 
 <template>
   <AdminNavbar />
-
   <div class="course-creation">
-    <!-- Nagłówek strony -->
     <header class="page-header">
       <div class="container">
         <h1>Nowy kurs</h1>
         <p>Stwórz wizytówkę kursu, aby rozpocząć proces tworzenia</p>
       </div>
     </header>
-
-    <!-- Główna zawartość -->
     <main class="content-wrapper">
       <div class="container">
         <div class="form-container">
-          <div class="form-header">
-            <h2>Wizytówka kursu</h2>
-            <p>
-              Te informacje będą widoczne dla uczestników przed zapisaniem się
-              na kurs
-            </p>
-          </div>
-
-          <div class="tips">
-            <div class="tip">
-              <div class="tip-icon">📝</div>
-              <div class="tip-text">
-                <strong>Krótki, konkretny tytuł</strong> zwiększa
-                zainteresowanie kursem
-              </div>
-            </div>
-            <div class="tip">
-              <div class="tip-icon">📊</div>
-              <div class="tip-text">
-                <strong>Dobry opis</strong> powinien jasno komunikować czego
-                nauczy się uczestnik
-              </div>
-            </div>
-            <div class="tip">
-              <div class="tip-icon">🖼️</div>
-              <div class="tip-text">
-                <strong>Wysokiej jakości zdjęcie</strong> przyciąga uwagę i
-                buduje profesjonalizm
-              </div>
-            </div>
-          </div>
-
           <div class="form-body">
             <CourseCardFrom @submit="handleCourseCreated" />
           </div>
@@ -110,7 +79,7 @@ const handleCourseCreated = (courseData) => {
 }
 
 .form-container {
-  background: white;
+  background: rgb(245, 245, 245);
   border-radius: 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   padding: 40px;
