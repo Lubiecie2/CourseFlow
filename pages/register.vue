@@ -3,6 +3,8 @@ definePageMeta({
   layout: "login",
   middleware: "auth",
 });
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 const email = ref("");
 const password = ref("");
@@ -12,6 +14,7 @@ const firstName = ref("");
 const lastName = ref("");
 const successMessage = ref("");
 const errorMessage = ref("");
+const router = useRouter();
 
 const validatePassword = (password: string) => {
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{10,}$/;
@@ -49,14 +52,7 @@ const onSubmit = async () => {
       },
     });
 
-    // Reset formularza po sukcesie
-    email.value = "";
-    password.value = "";
-    confirmPassword.value = "";
-    firstName.value = "";
-    lastName.value = "";
-
-    successMessage.value = "Konto zostało zarejestrowane pomyślnie!";
+    router.push({ name: "verifyRegister", query: { email: email.value } });
   } catch (error) {
     errorMessage.value = "Wystąpił błąd podczas rejestracji. Spróbuj ponownie.";
   }
@@ -174,8 +170,9 @@ const onSubmit = async () => {
             to="/login"
             href="#"
             class="button-classic"
-            >Zaloguj się</nuxt-link
           >
+            Zaloguj się
+          </nuxt-link>
         </div>
       </div>
     </div>
