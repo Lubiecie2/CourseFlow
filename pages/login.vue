@@ -4,6 +4,9 @@ definePageMeta({
   middleware: "auth",
 });
 
+import { useRouter } from "vue-router";
+const router = useRouter();
+
 const user = useUserStore();
 
 const email = ref("");
@@ -19,6 +22,29 @@ const onSubmit = async () => {
       },
       credentials: "include",
     });
+
+    if (response.user && response.user.is_verified === false) {
+      const userStore = useUserStore();
+      userStore.user = {
+        id: response.user.id,
+        email: response.user.email,
+        is_verified: false,
+      };
+
+      try {
+        await useApiFrontend("/auth/resend-code", {
+          method: "POST",
+          body: { email: email.value },
+        });
+      } catch (resendError) {
+        console.error("Error resending verification code:", resendError);
+      }
+
+      router.push(`/verifyRegister?email=${email.value}`);
+      return;
+    }
+
+    const user = useUserStore();
     await user.fetchUser();
     navigateTo("/");
   } catch (error) {

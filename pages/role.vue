@@ -17,6 +17,8 @@ const createSuccessMessage = ref("");
 const updateSuccessMessage = ref("");
 const forbiddenRoles = ["admin", "user"];
 const errorMessage = ref("");
+const showDeleteDialog = ref(false);
+const roleToDelete = ref(null);
 
 // --------- TWORZENIE ROLI --------------------------------------------------
 
@@ -171,6 +173,33 @@ const sendUpdateRole = async () => {
   }
 };
 
+// --------- USUWANIE RÓL ---------------------------------------------------------
+const confirmDeleteRole = (role) => {
+  roleToDelete.value = role;
+  showDeleteDialog.value = true;
+};
+
+const deleteRole = async () => {
+  try {
+    if (roleToDelete.value) {
+      await useApiFrontend(`/role/deleterole/${roleToDelete.value.id}`, {
+        method: "DELETE",
+      });
+      showDeleteDialog.value = false;
+      roleToDelete.value = null;
+    }
+  } catch (err) {
+    console.error("Błąd przy usuwaniu roli:", err);
+  }
+  window.location.reload();
+};
+
+const cancelDelete = () => {
+  showDeleteDialog.value = false;
+};
+
+// --------- KONIEC USUWANIA RÓL ---------------------------------------------------------
+
 const translatePermissions = {
   PANEL_SHOW_USERS_LIST: "Zarządzanie użytkownikami",
   PANEL_EDIT_USERS: "Edytowanie użytkowników",
@@ -286,6 +315,12 @@ const translatePermissions = {
               class="role-item"
             >
               {{ role.name }}
+              <span
+                @click.stop="confirmDeleteRole(role)"
+                class="delete-icon"
+              >
+                🗑️
+              </span>
             </li>
           </ul>
           <ul v-if="roles.length === 0">
@@ -295,6 +330,33 @@ const translatePermissions = {
       </div>
     </div>
     <foter></foter>
+  </div>
+
+  <div
+    v-if="showDeleteDialog"
+    class="delete-dialog"
+  >
+    <div
+      class="dialog-overlay"
+      @click="cancelDelete"
+    ></div>
+    <div class="dialog-content">
+      <p>Czy na pewno chcesz usunąć tę rolę {{ selectedRole.name }}?</p>
+      <div class="button-container">
+        <button
+          @click="deleteRole"
+          class="confirm-delete-btn"
+        >
+          Potwierdź
+        </button>
+        <button
+          @click="cancelDelete"
+          class="cancel-delete-btn"
+        >
+          Anuluj
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -474,5 +536,62 @@ h2 {
 .create-message,
 .update-message {
   color: rgb(7, 156, 7);
+}
+.delete-icon {
+  color: red;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.delete-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  text-align: center;
+  width: 300px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.confirm-delete-btn,
+.cancel-delete-btn {
+  margin-top: 2vh;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 45%;
+}
+
+.confirm-delete-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.cancel-delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.confirm-delete-btn:hover,
+.cancel-delete-btn:hover {
+  opacity: 0.6;
 }
 </style>

@@ -6,6 +6,9 @@ export const useUserStore = defineStore("user", () => {
       const { data } = await useApiServer("/auth/me");
       if (data.value) {
         user.value = data.value;
+        if (user.value && user.value.is_verified === false) {
+          console.log("User is not verified, will redirect to verification");
+        }
       }
 
       return user.value;
