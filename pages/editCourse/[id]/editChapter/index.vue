@@ -7,6 +7,8 @@ const isLoading = ref(true);
 const newChapter = ref({ title: "", description: "" });
 const successMessage = ref("");
 const errorMessage = ref("");
+const showDeleteDialog = ref(false);
+const chapterToDelete = ref(null);
 
 const fetchChapters = async () => {
   isLoading.value = true;
@@ -69,6 +71,45 @@ const addChapter = async () => {
   }
 };
 fetchChapters();
+const confirmDeleteChapter = (chapter) => {
+  chapterToDelete.value = chapter;
+  showDeleteDialog.value = true;
+};
+
+const cancelDelete = () => {
+  chapterToDelete.value = null;
+  showDeleteDialog.value = false;
+};
+
+const deleteChapter = async () => {
+  if (!chapterToDelete.value) return;
+
+  try {
+    const { data, error } = await useApiServer(
+      `/courses/${courseId}/chapters/${chapterToDelete.value.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (error.value) {
+      errorMessage.value = "Wystąpił błąd podczas usuwania rozdziału";
+      console.error("Błąd usuwania rozdziału:", error.value);
+    } else {
+      await fetchChapters();
+      successMessage.value = "Rozdział został pomyślnie usunięty";
+
+      setTimeout(() => {
+        successMessage.value = "";
+      }, 3000);
+    }
+  } catch (err) {
+    errorMessage.value = "Wystąpił błąd podczas usuwania rozdziału";
+    console.error("Błąd usuwania rozdziału:", err);
+  } finally {
+    cancelDelete();
+  }
+};
 </script>
 
 <template>
@@ -132,14 +173,22 @@ fetchChapters();
           class="chapter-item flex justify-between items-center"
         >
           <div class="chapter-title">{{ chapter.title }}</div>
-          <div>
+          <div class="chapter-actions">
+            <button
+              @click.stop="confirmDeleteChapter(chapter)"
+              class="btn-delete"
+            >
+              Usuń
+            </button>
             <NuxtLink
               :to="{
                 name: 'editCourse-id-editChapter-chapterId',
                 params: { id: Number(courseId), chapterId: chapter.id },
               }"
-              >Edytuj</NuxtLink
+              class="btn-edit"
             >
+              Edytuj
+            </NuxtLink>
           </div>
         </li>
       </ul>
@@ -150,6 +199,32 @@ fetchChapters();
       class="loading"
     >
       Ładowanie...
+    </div>
+  </div>
+  <div
+    v-if="showDeleteDialog"
+    class="delete-dialog"
+  >
+    <div
+      class="dialog-overlay"
+      @click="cancelDelete"
+    ></div>
+    <div class="dialog-content">
+      <p>Czy na pewno chcesz usunąć rozdział "{{ chapterToDelete?.title }}"?</p>
+      <div class="button-container">
+        <button
+          @click="deleteChapter"
+          class="confirm-delete-btn"
+        >
+          Potwierdź
+        </button>
+        <button
+          @click="cancelDelete"
+          class="cancel-delete-btn"
+        >
+          Anuluj
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -218,7 +293,7 @@ textarea.form-control {
 }
 
 .btn-primary {
-  background-color: #dc3545;
+  background-color: rgba(235, 87, 87, 0.85);
   color: white;
   border: none;
   padding: 10px 16px;
@@ -228,7 +303,7 @@ textarea.form-control {
 }
 
 .btn-primary:hover {
-  background-color: #c82333;
+  background-color: rgba(226, 78, 78, 0.85);
 }
 
 .chapters-list {
@@ -274,5 +349,98 @@ textarea.form-control {
   text-align: center;
   padding: 20px;
   color: #6c757d;
+}
+.chapter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-delete {
+  color: #fff;
+  background-color: rgba(235, 87, 87, 0.85);
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-delete:hover {
+  background-color: rgba(226, 78, 78, 0.85);
+}
+
+.btn-edit {
+  display: inline-block;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.btn-edit:hover {
+  background-color: #0069d9;
+}
+
+.delete-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+  z-index: 1001;
+  text-align: center;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.confirm-delete-btn {
+  background-color: rgba(235, 87, 87, 0.85);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.confirm-delete-btn:hover {
+  background-color: rgba(226, 78, 78, 0.85);
+}
+
+.cancel-delete-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style>

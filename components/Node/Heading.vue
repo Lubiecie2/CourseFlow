@@ -1,5 +1,8 @@
 <template>
-  <component :is="`h${level}`">
+  <component
+    :is="`h${level}`"
+    :class="$attrs.format"
+  >
     {{ content }}
   </component>
 </template>

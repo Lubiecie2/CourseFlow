@@ -9,6 +9,9 @@ definePageMeta({
 const courses = ref([]);
 const isLoading = ref(true);
 const errorMessage = ref("");
+const showDeleteDialog = ref(false);
+const courseToDelete = ref(null);
+const deleteSuccessMessage = ref("");
 
 const fetchCourses = async () => {
   isLoading.value = true;
@@ -29,6 +32,42 @@ const fetchCourses = async () => {
   }
 };
 
+const confirmDelete = (course) => {
+  courseToDelete.value = course;
+  showDeleteDialog.value = true;
+};
+
+const cancelDelete = () => {
+  courseToDelete.value = null;
+  showDeleteDialog.value = false;
+};
+const deleteCourse = async () => {
+  try {
+    const { error } = await useApiServer(
+      `/courses/${courseToDelete.value.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (error.value) {
+      throw new Error(error.value.message || "Nie udało się usunąć kursu");
+    }
+
+    deleteSuccessMessage.value = `Kurs "${courseToDelete.value.title}" został usunięty`;
+    showDeleteDialog.value = false;
+    courseToDelete.value = null;
+
+    await fetchCourses();
+
+    setTimeout(() => {
+      deleteSuccessMessage.value = "";
+    }, 5000);
+  } catch (err) {
+    console.error("Błąd podczas usuwania kursu:", err);
+    errorMessage.value = err.message || "Nie udało się usunąć kursu";
+  }
+};
 onMounted(fetchCourses);
 </script>
 
@@ -41,6 +80,12 @@ onMounted(fetchCourses);
           <h1>Lista kursów</h1>
           <p>Zarządzaj swoimi kursami</p>
         </header>
+        <div
+          v-if="deleteSuccessMessage"
+          class="success-message"
+        >
+          {{ deleteSuccessMessage }}
+        </div>
 
         <div
           v-if="isLoading"
@@ -96,6 +141,12 @@ onMounted(fetchCourses);
                   >
                     Edytuj kurs
                   </NuxtLink>
+                  <button
+                    @click="confirmDelete(course)"
+                    class="btn-delete"
+                  >
+                    Usuń
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -109,6 +160,30 @@ onMounted(fetchCourses);
           >
             Utwórz nowy kurs
           </NuxtLink>
+        </div>
+      </div>
+    </div>
+    <div
+      v-if="showDeleteDialog"
+      class="delete-dialog-overlay"
+    >
+      <div class="delete-dialog">
+        <h3>Potwierdź usunięcie</h3>
+        <p>Czy na pewno chcesz usunąć kurs "{{ courseToDelete?.title }}"?</p>
+        <p class="warning">Ta operacja jest nieodwracalna.</p>
+        <div class="dialog-actions">
+          <button
+            @click="cancelDelete"
+            class="btn-cancel"
+          >
+            Anuluj
+          </button>
+          <button
+            @click="deleteCourse"
+            class="btn-confirm"
+          >
+            Usuń
+          </button>
         </div>
       </div>
     </div>
@@ -257,7 +332,90 @@ onMounted(fetchCourses);
 .btn-create:hover {
   background-color: rgba(226, 61, 61, 0.85);
 }
+.btn-delete {
+  display: inline-block;
+  background-color: #dc3545;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
 
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.delete-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.delete-dialog {
+  background-color: white;
+  padding: 30px;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.delete-dialog h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #212529;
+}
+
+.delete-dialog .warning {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-confirm {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
 @media (max-width: 768px) {
   .page-header h1 {
     font-size: 2rem;

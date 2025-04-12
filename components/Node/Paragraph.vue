@@ -1,5 +1,8 @@
 <template>
-  <p v-html="content" />
+  <p
+    :class="$attrs.format"
+    v-html="content"
+  />
 </template>
 
 <script setup lang="ts">
