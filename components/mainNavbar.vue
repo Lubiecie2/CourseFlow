@@ -12,6 +12,14 @@ const goToRegister = () => {
   router.push("/register");
 };
 
+const goToCourses = () => {
+  router.push("/courses");
+};
+
+const goToProfile = () => {
+  router.push("/profile/profil");
+};
+
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
@@ -47,9 +55,18 @@ const { logout } = userStore;
           v-if="usePermissionGuard('PANEL_SHOW_ADMIN_PANEL')"
           >Zarządzanie stroną
         </NuxtLink>
-        <button class="red-button">Kursy</button>
-
-        <button class="red-button">Profil</button>
+        <button
+          class="red-button"
+          @click="goToCourses"
+        >
+          Kursy
+        </button>
+        <button
+          class="red-button"
+          @click="goToProfile"
+        >
+          Profil
+        </button>
         <button
           class="red-button"
           @click="logout"
@@ -64,7 +81,12 @@ const { logout } = userStore;
         class="nav-button-container"
         v-else
       >
-        <button class="red-button">Kursy</button>
+        <button
+          class="red-button"
+          @click="goToCourses"
+        >
+          Kursy
+        </button>
         <button
           class="red-button"
           @click="goToRegister"
@@ -97,6 +119,7 @@ const { logout } = userStore;
         <NuxtLink
           to="/admin"
           class="red-button"
+          v-if="usePermissionGuard('PANEL_SHOW_ADMIN_PANEL')"
           >Zarządzanie stroną</NuxtLink
         >
         <button class="red-button">Kursy</button>

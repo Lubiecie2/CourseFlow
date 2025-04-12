@@ -61,7 +61,7 @@
   </div>
 </template>
 
-<style>
+<style scoped>
 @keyframes slideIn {
   from {
     opacity: 0;

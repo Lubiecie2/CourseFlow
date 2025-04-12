@@ -1,0 +1,166 @@
+<script lang="ts" setup>
+definePageMeta({
+  layout: "login",
+  middleware: "auth",
+});
+
+const router = useRouter();
+const { data: user } = await useApiServer("auth/me");
+
+const goToBadges = () => {
+  router.push("/profile/badges");
+};
+
+const goToLearning = () => {
+  router.push("/profile/learning");
+};
+</script>
+
+<template>
+  <UserNavbar></UserNavbar>
+  <div class="profile-container">
+    <div class="top-section">
+      <div class="user-column">
+        <div class="avatar-icon">👤</div>
+        <h2>Szczegóły użytkownika</h2>
+        <p><strong>E-mail</strong><br />{{ user?.email || "Brak" }}</p>
+        <p><strong>Imię</strong><br />{{ user?.firstName || "Brak" }}</p>
+        <p><strong>Nazwisko</strong><br />{{ user?.lastName || "Brak" }}</p>
+      </div>
+      <div class="divider-vertical"></div>
+      <div class="activity-column">
+        <h2>Aktywność konta</h2>
+        <p>
+          <strong>Pierwszy dostęp do strony:</strong><br />{{
+            // zmienic (przekonwertowac) date, zły zapis
+            user?.createdAt || "Brak"
+          }}
+        </p>
+      </div>
+    </div>
+    <div class="divider-horizontal"></div>
+    <div class="navigation-buttons">
+      <button
+        @click="goToBadges"
+        class="nav-button"
+      >
+        Odznaki i certyfikaty
+      </button>
+      <button
+        @click="goToLearning"
+        class="nav-button"
+      >
+        Moja nauka
+      </button>
+    </div>
+  </div>
+  <foter></foter>
+</template>
+
+<style scoped>
+.profile-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+  font-family: Arial, sans-serif;
+}
+
+.top-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  padding-bottom: 30px;
+}
+
+.user-column,
+.activity-column {
+  flex: 1;
+}
+
+.avatar-icon {
+  font-size: 48px;
+  background-color: #eee;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+h2 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: #111;
+}
+
+p {
+  font-size: 15px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.divider-vertical {
+  width: 1px;
+  background-color: #ccc;
+  height: auto;
+}
+
+.divider-horizontal {
+  height: 1px;
+  background-color: #ccc;
+  margin: 30px 0;
+}
+
+.navigation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 25px;
+  background-color: #eb5757;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 220px;
+  box-shadow: 0 4px 6px rgba(235, 87, 87, 0.15);
+}
+
+.nav-button:hover {
+  background-color: #d63031;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(235, 87, 87, 0.2);
+}
+
+@media (max-width: 768px) {
+  .top-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .divider-vertical {
+    display: none;
+  }
+
+  .navigation-buttons {
+    flex-direction: column;
+  }
+
+  .nav-button {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+</style>

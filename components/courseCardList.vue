@@ -4,36 +4,61 @@ import { ref, onMounted } from "vue";
 const courses = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
+const retryCount = ref(0);
+const router = useRouter();
+
+const navigateToCourse = (courseId) => {
+  router.push(`/course/${courseId}`);
+};
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return "http://localhost:4000/uploads/default-course.jpg";
-
   if (imagePath.startsWith("http")) {
     return imagePath;
   }
-
   return `http://localhost:4000/uploads/${imagePath}`;
 };
 
-const fetchCourses = async () => {
+const fetchUserCourses = async () => {
   try {
     isLoading.value = true;
-    const response = await useApiFrontend("/courses");
-    courses.value = response || [];
+    error.value = null;
+
+    const { data, error: apiError } = await useApiServer(
+      "/userCourse/registeredForCourse"
+    );
+
+    if (apiError.value) {
+      throw new Error(
+        apiError.value.message || "błąd podczas pobierania danych."
+      );
+    }
+    if (data.value && Array.isArray(data.value)) {
+      courses.value = data.value.map((registration) => registration.courses);
+    } else {
+      courses.value = [];
+    }
   } catch (err) {
-    console.error("Błąd podczas pobierania kursów:", err);
-    error.value = "Nie udało się załadować kursów. Spróbuj odświeżyć stronę.";
+    console.error("Błąd podczas pobierania kursów użytkownika:", err);
+    error.value =
+      "Nie udało się załadować twoich kursów. Spróbuj odświeżyć stronę.";
+    if (retryCount.value < 3) {
+      setTimeout(() => {
+        retryCount.value++;
+        fetchUserCourses();
+      }, 1000 * retryCount.value);
+    }
   } finally {
     isLoading.value = false;
   }
 };
-onMounted(fetchCourses);
+onMounted(() => {
+  setTimeout(fetchUserCourses, 300);
+});
 </script>
 
 <template>
   <div class="courses-section">
-    <h2 class="section-title">Dostępne kursy</h2>
-
     <div
       v-if="isLoading"
       class="loading-state"
@@ -65,6 +90,7 @@ onMounted(fetchCourses);
         v-for="course in courses"
         :key="course.id"
         class="course-card"
+        @click="navigateToCourse(course.id)"
       >
         <div class="course-image">
           <img
