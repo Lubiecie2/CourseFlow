@@ -1,6 +1,6 @@
 <template>
   <p
-    :class="$attrs.format"
+    :class="format"
     v-html="content"
   />
 </template>
@@ -11,5 +11,6 @@ defineProps({
     type: String,
     required: true,
   },
+  format: { type: Array, default: () => [] },
 });
 </script>

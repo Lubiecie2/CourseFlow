@@ -170,6 +170,7 @@ onMounted(fetchCourses);
 <style scoped>
 .container {
   max-width: 1280px;
+  min-height: 800px;
   margin: 0 auto;
   padding: 0 5px 0 0;
 }

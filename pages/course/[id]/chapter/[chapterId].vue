@@ -5,7 +5,7 @@ definePageMeta({
 });
 
 import { ref, onMounted } from "vue";
-import { NodeHeading, NodeParagraph, NodeList } from "#components";
+import { NodeHeading, NodeParagraph, NodeList, NodeImage, NodeVideo } from "#components";
 
 const route = useRoute();
 const router = useRouter();
@@ -24,6 +24,10 @@ const getComponent = (type) => {
       return NodeHeading;
     case "list":
       return NodeList;
+    case "image":
+      return NodeImage;
+    case "video":
+      return NodeVideo;
     default:
       return NodeParagraph;
   }
@@ -284,5 +288,50 @@ const goBackToCourse = () => {
 
 .text-right {
   text-align: right;
+}
+.image-sm {
+  max-width: 25%;
+}
+
+.image-md {
+  max-width: 50%;
+}
+
+.image-lg {
+  max-width: 75%;
+}
+
+.image-full {
+  width: 100%;
+}
+
+.video-sm {
+  max-width: 25%;
+}
+
+.video-md {
+  max-width: 50%;
+}
+
+.video-lg {
+  max-width: 75%;
+}
+
+.video-full {
+  width: 100%;
+}
+
+.image-container.text-center,
+.video-container.text-center {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+.image-container.text-right,
+.video-container.text-right {
+  margin-left: auto;
+  margin-right: 0;
+  display: block;
 }
 </style>

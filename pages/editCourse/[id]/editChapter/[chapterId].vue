@@ -1,5 +1,4 @@
 <style scoped>
-/* Główne kontenery */
 .editor-wrapper {
   max-width: 1600px;
   margin: 0 auto;
@@ -52,7 +51,7 @@
   overflow-wrap: break-word;
   word-wrap: break-word;
   white-space: pre-wrap;
-  max-width: 95%;
+  width: 95%;
 }
 
 .editable-element:hover {
@@ -157,6 +156,21 @@
 .text-right {
   text-align: right;
 }
+.image-sm {
+  max-width: 25%;
+}
+
+.image-md {
+  max-width: 50%;
+}
+
+.image-lg {
+  max-width: 75%;
+}
+
+.image-full {
+  width: 100%;
+}
 
 .editable-element.text-center ul,
 .editable-element.text-center ol,
@@ -244,7 +258,7 @@
 }
 
 .btn-primary {
-  background-color: #0066cc;
+  background-color: #eb5757;
   color: white;
   padding: 12px 24px;
   border-radius: 4px;
@@ -256,7 +270,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #0055aa;
+  background-color: #d64545;
 }
 
 .actions-row {
@@ -270,6 +284,7 @@
   margin-bottom: 10px;
   position: relative;
   width: 100%;
+  padding-right: 50px;
 }
 
 .drag-handle {
@@ -284,9 +299,11 @@
 }
 
 .item-actions {
+  position: absolute;
+  right: 0;
+  top: 8px;
   display: flex;
   align-items: center;
-  position: relative;
 }
 
 .action-button {
@@ -425,6 +442,152 @@
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
 }
+.image-upload-container {
+  margin-bottom: 15px;
+}
+
+.file-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.file-input-label {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: #eb5757;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  text-align: center;
+  max-width: 200px;
+}
+
+.file-input-label:hover {
+  background-color: #d64545;
+}
+
+.file-input {
+  display: none;
+}
+
+.selected-file-name {
+  font-size: 14px;
+  color: #555;
+  margin-left: 5px;
+}
+
+.upload-progress {
+  width: 100%;
+  height: 6px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #0066cc;
+  transition: width 0.3s ease;
+}
+.block-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  background-color: #f5f5f5;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: normal;
+  margin-right: 10px;
+  margin-top: 8px;
+  user-select: none;
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.block-number:hover {
+  background-color: #e9ecef;
+  color: #333;
+  border-color: #ccc;
+}
+
+.block-number:active {
+  cursor: grabbing;
+  background-color: #dee2e6;
+}
+.video-sm {
+  max-width: 25%;
+}
+
+.video-md {
+  max-width: 50%;
+}
+
+.video-lg {
+  max-width: 75%;
+}
+
+.video-full {
+  width: 100%;
+}
+
+.video-input {
+  margin-bottom: 15px;
+}
+
+.video-preview {
+  margin-top: 10px;
+  max-width: 320px;
+}
+
+.video-preview video {
+  width: 100%;
+  border-radius: 4px;
+}
+.file-path-container {
+  margin-top: 10px;
+  background-color: #f8f8f8;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.file-path {
+  font-size: 14px;
+  word-break: break-all;
+  margin-top: 5px;
+}
+
+.file-path code {
+  color: #0066cc;
+  font-family: monospace;
+  padding: 2px 4px;
+  background-color: #f1f1f1;
+  border-radius: 3px;
+}
+.image-container.text-center,
+.video-container.text-center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  display: block;
+}
+
+.image-container.text-right,
+.video-container.text-right {
+  margin-left: auto;
+  margin-right: 0;
+  text-align: right;
+  display: block;
+}
 </style>
 
 <template>
@@ -447,8 +610,8 @@
       >
         <template #item="{ element, index }">
           <div class="draggable-item">
-            <div class="drag-handle">
-              <i class="fas fa-grip-vertical"></i>
+            <div class="block-number drag-handle">
+              {{ index + 1 }}
             </div>
             <component
               :is="getComponent(element.type)"
@@ -653,6 +816,96 @@
                     <span>⮕</span>
                   </div>
                 </div>
+                <div
+                  class="format-group"
+                  v-if="element.type === 'image'"
+                >
+                  <div
+                    class="format-option size-option"
+                    @click="applyImageSize('image-sm', index)"
+                    :class="{
+                      active: hasImageSize(element.params.format, 'image-sm'),
+                    }"
+                    title="Małe (25%)"
+                  >
+                    <span>S</span>
+                  </div>
+                  <div
+                    class="format-option size-option"
+                    @click="applyImageSize('image-md', index)"
+                    :class="{
+                      active: hasImageSize(element.params.format, 'image-md'),
+                    }"
+                    title="Średnie (50%)"
+                  >
+                    <span>M</span>
+                  </div>
+                  <div
+                    class="format-option size-option"
+                    @click="applyImageSize('image-lg', index)"
+                    :class="{
+                      active: hasImageSize(element.params.format, 'image-lg'),
+                    }"
+                    title="Duże (75%)"
+                  >
+                    <span>L</span>
+                  </div>
+                  <div
+                    class="format-option size-option"
+                    @click="applyImageSize('image-full', index)"
+                    :class="{
+                      active: hasImageSize(element.params.format, 'image-full'),
+                    }"
+                    title="Pełna szerokość"
+                  >
+                    <span>100%</span>
+                  </div>
+                </div>
+                <div
+                  class="format-group"
+                  v-if="element.type === 'video'"
+                >
+                  <div
+                    class="format-option size-option"
+                    @click="applyVideoSize('video-sm', index)"
+                    :class="{
+                      active: hasVideoSize(element.params.format, 'video-sm'),
+                    }"
+                    title="Małe (25%)"
+                  >
+                    <span>S</span>
+                  </div>
+                  <div
+                    class="format-option size-option"
+                    @click="applyVideoSize('video-md', index)"
+                    :class="{
+                      active: hasVideoSize(element.params.format, 'video-md'),
+                    }"
+                    title="Średnie (50%)"
+                  >
+                    <span>M</span>
+                  </div>
+                  <div
+                    class="format-option size-option"
+                    @click="applyVideoSize('video-lg', index)"
+                    :class="{
+                      active: hasVideoSize(element.params.format, 'video-lg'),
+                    }"
+                    title="Duże (75%)"
+                  >
+                    <span>L</span>
+                  </div>
+                  <div
+                    class="format-option size-option"
+                    @click="applyVideoSize('video-full', index)"
+                    :class="{
+                      active: hasVideoSize(element.params.format, 'video-full'),
+                    }"
+                    title="Pełna szerokość"
+                  >
+                    <span>100%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -714,7 +967,93 @@
           placeholder="Wprowadź treść"
         />
       </div>
-
+      <div
+        v-if="contentType === 'image'"
+        class="image-input"
+      >
+        <div class="image-upload-container">
+          <div class="file-input-wrapper">
+            <label
+              for="image-upload"
+              class="file-input-label"
+            >
+              <span>Wybierz plik</span>
+              <input
+                type="file"
+                id="image-upload"
+                accept="image/*"
+                @change="handleImageUpload"
+                class="file-input"
+              />
+            </label>
+            <span
+              v-if="selectedFile"
+              class="selected-file-name"
+              >{{ selectedFile.name }}</span
+            >
+            <div
+              v-if="uploadProgress > 0 && uploadProgress < 100"
+              class="upload-progress"
+            >
+              <div
+                class="progress-bar"
+                :style="{ width: uploadProgress + '%' }"
+              ></div>
+            </div>
+          </div>
+        </div>
+        <input
+          v-model="imageCaption"
+          class="text-input"
+          placeholder="Podpis pod zdjęciem (opcjonalnie)"
+        />
+      </div>
+      <div
+        v-if="contentType === 'video'"
+        class="video-input"
+      >
+        <div class="file-input-wrapper">
+          <label
+            for="video-upload"
+            class="file-input-label"
+          >
+            <span>Wybierz film</span>
+            <input
+              type="file"
+              id="video-upload"
+              accept="video/mp4,video/webm,video/ogg,video/quicktime"
+              @change="handleVideoUpload"
+              class="file-input"
+            />
+          </label>
+          <span
+            v-if="selectedVideo"
+            class="selected-file-name"
+          >
+            {{ selectedVideo.name }}
+          </span>
+          <div
+            v-if="uploadVideoProgress > 0 && uploadVideoProgress < 100"
+            class="upload-progress"
+          >
+            <div
+              class="progress-bar"
+              :style="{ width: uploadVideoProgress + '%' }"
+            ></div>
+          </div>
+          <div
+            v-if="uploadedVideoUrl"
+            class="file-path-container"
+          >
+            <p>Film został przesłany!</p>
+          </div>
+        </div>
+        <input
+          v-model="videoCaption"
+          class="text-input"
+          placeholder="Podpis pod filmem (opcjonalnie)"
+        />
+      </div>
       <div class="actions-row">
         <button
           class="btn-primary"
@@ -732,12 +1071,10 @@
 
 // ------ Importy -------------------------------------------------
 
-import { NodeHeading, NodeParagraph,  NodeList } from "#components";
+import { NodeHeading, NodeParagraph,  NodeList, NodeImage, NodeVideo } from "#components";
 import { ref, shallowRef, nextTick } from "vue";
 import draggable from 'vuedraggable';
 
-
-// ------ Koniec Importów -----------------------------------------
 
 const route = useRoute();
 const { chapterId, id: courseId } = route.params;
@@ -745,6 +1082,7 @@ const { chapterId, id: courseId } = route.params;
 
 // ------ Zmienne -------------------------------------------------
 
+const content = ref([]);
 const text = ref("");
 const contentType = ref("text");
 const chapterTitleElement = ref(null);
@@ -752,8 +1090,14 @@ const chapterTitle = ref("");
 const listItems = ref("");
 const listType = ref("unordered");
 const activeFormatMenu = ref(null);
-
-// ------ Koniec zmiennch -----------------------------------------
+const selectedFile = ref(null);
+const imageCaption = ref("");
+const uploadProgress = ref(0);
+const uploadedImageUrl = ref("");
+const selectedVideo = ref(null);
+const videoCaption = ref("");
+const uploadVideoProgress = ref(0);
+const uploadedVideoUrl = ref("");
 
 // ------ Wybieranie komponentów ----------------------------------
 
@@ -761,6 +1105,8 @@ const options = ref([
   { value: "text", label: "Tekst" },
   { value: "heading", label: "Nagłówek" },
   { value: "list", label: "Lista" },
+  { value: "image", label: "Zdjęcie" },
+  { value: "video", label: "Film" },
 ]);
 
 const getComponent = (type) => {
@@ -769,24 +1115,25 @@ const getComponent = (type) => {
       return NodeParagraph;
     case "heading":
       return NodeHeading;
-      case "list":
+    case "list":
       return NodeList;
+    case "image":
+      return NodeImage;
+    case "video":
+      return NodeVideo;
     default:
       return NodeParagraph;
   }
 };
 
-// ------ Koniec wybierania komponentów ---------------------------
-
-
-const content = shallowRef([]);
-
+// ------ Usuwanie elementów treści --------------------------------
 
 const removeItem = (index) => {
   content.value = content.value.filter((_, i) => i !== index);
-  triggerRef(content);
   save();
 };
+
+// ------ Formatowanie tekstu --------------------------------------
 
 const applyFormat = (format, index) => {
   const item = content.value[index];
@@ -801,10 +1148,11 @@ const applyFormat = (format, index) => {
       item.params.format = [format];
     }
 
-    triggerRef(content);
+
     save();
   }
 };
+
 
 // ------ Zmiana tytułu rozdziału --------------------------------
 
@@ -834,9 +1182,7 @@ const saveTitle = (newTitle) => {
     });
 };
 
-// ------ Koniec zmiany tytułu rozdziału --------------------------------
-
-// ------ Roozwijane opcje formatowania ---------------------------------
+// ------ Rozwijane opcje formatowania ---------------------------------
 
 const toggleFormatMenu = (index) => {
   if (activeFormatMenu.value === index) {
@@ -846,9 +1192,8 @@ const toggleFormatMenu = (index) => {
   }
 };
 
-// ------ Koniec rozwijanych opcji formatowania -------------------------
 
-// ------ Do przypisywania rozmiaru teksu -------------------------------
+// ------ Formatowanie - rozmiar tekstu ----------------------------
 
 const applyFontSize = (sizeClass, index) => {
   const item = content.value[index];
@@ -865,7 +1210,6 @@ const applyFontSize = (sizeClass, index) => {
 
   item.params.format = formats;
 
-  triggerRef(content);
   save();
 };
 
@@ -879,9 +1223,63 @@ const hasFontSize = (formats, sizeClass) => {
   return sizeClasses.some(size => formats.includes(size) && size === sizeClass);
 };
 
-// ------ Koniec przypisywania rozmiaru teksu -------------------------------
+// ------ Formatowanie - rozmiar filmu -----------------------------
 
-// ------ Przypisywanie koloru teksu  -------------------------------
+const applyVideoSize = (sizeClass, index) => {
+  const item = content.value[index];
+  if (!item || item.type !== 'video') return;
+
+  const sizeClasses = ['video-sm', 'video-md', 'video-lg', 'video-full'];
+
+  let formats = Array.isArray(item.params.format) ? [...item.params.format] : [];
+  formats = formats.filter(f => !sizeClasses.includes(f));
+
+  if (!hasVideoSize(item.params.format, sizeClass)) {
+    formats.push(sizeClass);
+  }
+
+  item.params.format = formats;
+  save();
+};
+
+const hasVideoSize = (formats, sizeClass) => {
+  if (!formats || !Array.isArray(formats)) return false;
+
+  const sizeClasses = ['video-sm', 'video-md', 'video-lg', 'video-full'];
+
+  if (formats.includes(sizeClass)) return true;
+  return sizeClasses.some(size => formats.includes(size) && size === sizeClass);
+};
+
+// ------ Formatowanie - rozmiar obrazu ----------------------------
+
+const applyImageSize = (sizeClass, index) => {
+  const item = content.value[index];
+  if (!item || item.type !== 'image') return;
+
+  const sizeClasses = ['image-sm', 'image-md', 'image-lg', 'image-full'];
+
+  let formats = Array.isArray(item.params.format) ? [...item.params.format] : [];
+  formats = formats.filter(f => !sizeClasses.includes(f));
+
+  if (!hasImageSize(item.params.format, sizeClass)) {
+    formats.push(sizeClass);
+  }
+
+  item.params.format = formats;
+  save();
+};
+
+const hasImageSize = (formats, sizeClass) => {
+  if (!formats || !Array.isArray(formats)) return false;
+
+  const sizeClasses = ['image-sm', 'image-md', 'image-lg', 'image-full'];
+
+  if (formats.includes(sizeClass)) return true;
+  return sizeClasses.some(size => formats.includes(size) && size === sizeClass);
+};
+
+// ------ Formatowanie - kolor tekstu ------------------------------
 
 const applyColor = (colorClass, index) => {
   const item = content.value[index];
@@ -898,7 +1296,6 @@ const applyColor = (colorClass, index) => {
 
   item.params.format = formats;
 
-  triggerRef(content);
   save();
 };
 
@@ -912,34 +1309,133 @@ const hasColor = (formats, colorClass) => {
   return colorClasses.some(color => formats.includes(color) && color === colorClass);
 };
 
-// ------ Koniec przypisywania koloru teksu  -------------------------------
+// ------ Przesyłanie obrazu ---------------------------------------
+
+const handleImageUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  selectedFile.value = file;
+  uploadProgress.value = 1;
+
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await useApiFrontend(`courses/${courseId}/chapters/upload-image`, {
+      method: "POST",
+      body: formData,
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        uploadProgress.value = percentCompleted;
+      }
+    });
+
+    uploadProgress.value = 100;
+    uploadedImageUrl.value = response.imageUrl;
+  } catch (error) {
+    console.error("Błąd podczas przesyłania obrazu:", error);
+    alert("Wystąpił błąd podczas przesyłania obrazu");
+    selectedFile.value = null;
+    uploadProgress.value = 0;
+  }
+};
+
+// ------ Przesyłanie filmu ----------------------------------------
+
+const handleVideoUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  selectedVideo.value = file;
+  uploadVideoProgress.value = 1;
+
+  try {
+    const formData = new FormData();
+    formData.append("video", file);
+
+    const response = await useApiFrontend(`courses/${courseId}/chapters/${chapterId}/upload-video`, {
+      method: "POST",
+      body: formData,
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        uploadVideoProgress.value = percentCompleted;
+      }
+    });
+
+    uploadVideoProgress.value = 100;
+    uploadedVideoUrl.value = response.videoUrl;
+  } catch (error) {
+    console.error("Błąd podczas przesyłania filmu:", error);
+    alert("Wystąpił błąd podczas przesyłania filmu");
+    selectedVideo.value = null;
+    uploadVideoProgress.value = 0;
+  }
+};
 
 // ------ Dodawanie nowego elementu ------------------------------
 
 const add = () => {
   let newItem = {
     type: contentType.value,
-    params: {},
+    params: {
+      format: [],
+    },
     id: `item-${content.value.length}-${Date.now()}`,
   };
 
   if (contentType.value === 'list') {
     newItem.params = {
       items: listItems.value.split('\n').filter(item => item.trim()),
-      type: listType.value
+      type: listType.value,
+      format: [],
     };
+
+    listItems.value = "";
+  } else if (contentType.value === 'image') {
+    if (!uploadedImageUrl.value) {
+      alert('Najpierw prześlij zdjęcie');
+      return;
+    }
+
+    newItem.params = {
+      src: uploadedImageUrl.value,
+      alt: selectedFile.value?.name || 'Obraz kursu',
+      caption: imageCaption.value,
+      format: [],
+    };
+
+    selectedFile.value = null;
+    imageCaption.value = '';
+    uploadedImageUrl.value = '';
+    uploadProgress.value = 0;
+  } else if (contentType.value === 'video') {
+    if (!uploadedVideoUrl.value) {
+      alert('Najpierw prześlij film');
+      return;
+    }
+
+    newItem.params = {
+      src: uploadedVideoUrl.value,
+      caption: videoCaption.value,
+      format: [],
+    };
+
+    selectedVideo.value = null;
+    videoCaption.value = '';
+    uploadedVideoUrl.value = '';
+    uploadVideoProgress.value = 0;
   } else {
     newItem.params = {
       content: text.value,
+      format: [],
     };
+
+    text.value = "";
   }
 
   content.value = [...content.value, newItem];
-  triggerRef(content);
   save();
-
-  text.value = "";
-  listItems.value = "";
 };
 
 // ------ Unikalne identyfikatory elementów ------------------------
@@ -980,15 +1476,18 @@ const updateContent = (event, index) => {
     item.params.content = target.innerText;
   }
 
-  triggerRef(content);
   save();
 };
+
+// ------ Pobieranie zawartości rozdziału z serwera ----------------------
 
 const { data: chapter } = await useApiServer(
   `courses/${courseId}/chapters/${chapterId}`,
   { method: "GET" }
 );
 content.value = chapter.value.chapter.blocks || [];
+
+// ------ Do wyświetlania ul, ol ----------------------------------------
 
 content.value = content.value.map(item => {
   if (item.type === 'list' && item.params) {
@@ -1030,6 +1529,8 @@ content.value = content.value.map(item => {
 });
 
 ensureIds();
+
+// ------ Zapisywanie zmian treści rozdziałów -----------------------
 
 const save = () => {
   useApiFrontend(`courses/${courseId}/chapters/${chapterId}`, {

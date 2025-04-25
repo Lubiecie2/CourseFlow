@@ -59,7 +59,7 @@ onMounted(() => {
 
 <template>
   <div class="courses-section">
-    <div
+    <!-- <div
       v-if="isLoading"
       class="loading-state"
     >
@@ -80,12 +80,9 @@ onMounted(() => {
       class="empty-state"
     >
       <p>Nie znaleziono żadnych kursów.</p>
-    </div>
+    </div> -->
 
-    <div
-      v-else
-      class="courses-grid"
-    >
+    <div class="courses-grid">
       <div
         v-for="course in courses"
         :key="course.id"
@@ -114,6 +111,7 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 20px;
+  min-height: 600px;
 }
 
 .section-title {
