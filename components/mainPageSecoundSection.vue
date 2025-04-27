@@ -1,6 +1,12 @@
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
 
+const router = useRouter();
+
+const goToRegister = () => {
+  router.push("/register");
+};
+
 const sectionVisible = ref(false);
 
 onMounted(() => {
@@ -56,7 +62,12 @@ onMounted(() => {
             </div>
           </div>
 
-          <button class="cta-button">Zapisz się teraz</button>
+          <button
+            class="cta-button"
+            @click="goToRegister"
+          >
+            Zapisz się teraz
+          </button>
         </div>
       </div>
     </div>

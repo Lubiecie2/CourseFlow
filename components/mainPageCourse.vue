@@ -1,4 +1,10 @@
-<script lang="ts" setup></script>
+<script setup>
+const router = useRouter();
+
+const goToCourses = () => {
+  router.push("/courses");
+};
+</script>
 
 <template>
   <div>
@@ -20,7 +26,12 @@
           </p>
         </div>
         <div class="course-block-button">
-          <button class="ctta-button">Więcej informacji</button>
+          <button
+            class="ctta-button"
+            @click="goToCourses"
+          >
+            Więcej informacji
+          </button>
         </div>
       </div>
       <div class="course-block">
@@ -37,7 +48,12 @@
           </p>
         </div>
         <div class="course-block-button">
-          <button class="ctta-button">Więcej informacji</button>
+          <button
+            class="ctta-button"
+            @click="goToCourses"
+          >
+            Więcej informacji
+          </button>
         </div>
       </div>
       <div class="course-block">
@@ -54,7 +70,12 @@
           </p>
         </div>
         <div class="course-block-button">
-          <button class="ctta-button">Więcej informacji</button>
+          <button
+            class="ctta-button"
+            @click="goToCourses"
+          >
+            Więcej informacji
+          </button>
         </div>
       </div>
     </div>

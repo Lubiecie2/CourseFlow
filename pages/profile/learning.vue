@@ -22,14 +22,14 @@ const goToBadges = () => {
   <div class="navigation-buttons">
     <button
       @click="goToProfile"
-      class="nav-button profile-button"
+      class="red-button"
     >
       Powrót do profilu
     </button>
 
     <button
       @click="goToBadges"
-      class="nav-button badges-button"
+      class="red-button"
     >
       Odznaki i certyfikaty
     </button>
@@ -52,26 +52,51 @@ h2 {
   margin-bottom: 40px;
 }
 
-.nav-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 15px 25px;
-  background-color: #eb5757;
+.red-button {
+  background-color: rgba(235, 87, 87, 0.85);
   color: white;
+  font-size: 16px;
+  font-weight: 500;
   border: none;
   border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 10px 20px;
   cursor: pointer;
   transition: all 0.3s ease;
-  width: 220px;
-  box-shadow: 0 4px 6px rgba(235, 87, 87, 0.15);
+  margin-right: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-.nav-button:hover {
-  background-color: #d63031;
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(235, 87, 87, 0.2);
+.red-button:hover {
+  background-color: rgba(235, 87, 87, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.red-button:active {
+  transform: translateY(0);
+  background-color: rgba(194, 72, 72, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.red-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.red-button:active::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  transition: 0s;
 }
 </style>

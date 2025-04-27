@@ -11,9 +11,6 @@ const goToCourses = () => {
 const goToUsers = () => {
   router.push("/users");
 };
-const goToTests = () => {
-  router.push("/tests");
-};
 const goToMainPage = () => {
   router.push("/");
 };
@@ -32,7 +29,11 @@ const { logout } = userStore;
 <template>
   <div>
     <div class="navbar">
-      <div class="nav-logo">
+      <div
+        class="nav-logo"
+        @click="goToMainPage"
+        style="cursor: pointer"
+      >
         <img
           src="../public/images/Logo.png"
           alt="Logo"
@@ -63,13 +64,6 @@ const { logout } = userStore;
           v-if="usePermissionGuard('PANEL_SHOW_USERS')"
         >
           Zarządzaj użytkownikami
-        </button>
-        <button
-          class="red-button"
-          @click="goToTests"
-          v-if="usePermissionGuard('PANEL_SHOW_TESTS')"
-        >
-          Testy
         </button>
         <button
           class="red-button"

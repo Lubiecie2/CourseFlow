@@ -1,4 +1,11 @@
-<script lang="ts" setup></script>
+<script setup>
+const router = useRouter();
+
+const goToCourses = () => {
+  router.push("/courses");
+};
+
+</script>
 
 <template>
   <div>
@@ -16,7 +23,7 @@
             tutaj kursy dopasowane do Twoich potrzeb. Dołącz do nas i rozpocznij
             swoją edukacyjną podróż już dziś!
           </p>
-          <button class="cta-button">Rozpocznij naukę</button>
+          <button class="cta-button" @click="goToCourses" >Rozpocznij naukę</button>
         </div>
       </div>
       <div class="right-side"></div>

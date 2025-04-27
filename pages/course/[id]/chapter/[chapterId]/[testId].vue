@@ -1,0 +1,613 @@
+<script setup>
+definePageMeta({
+  layout: "login",
+  middleware: "auth",
+});
+
+import { ref, onMounted, computed } from "vue";
+
+const route = useRoute();
+const router = useRouter();
+const courseId = route.params.id;
+const chapterId = route.params.chapterId;
+const testId = route.params.testId;
+const isLoading = ref(true);
+const error = ref(null);
+const currentTest = ref(null);
+const userAnswers = ref({});
+const testResults = ref(null);
+const showResults = ref(false);
+const isSubmitting = ref(false);
+const hasAttempted = ref(false);
+
+onMounted(async () => {
+  await checkPreviousAttempt();
+  await loadTest();
+});
+
+const checkPreviousAttempt = async () => {
+  try {
+    const response = await useApiFrontend(`userTest/${testId}/attempts`);
+    if (response && response.attempts && response.attempts.length > 0) {
+      hasAttempted.value = true;
+      const lastAttempt = response.attempts[0];
+      const maxScore = lastAttempt.max_score || 1;
+      const percentage = Math.round((lastAttempt.score / maxScore) * 100);
+
+      testResults.value = {
+        score: lastAttempt.score,
+        totalPoints: maxScore,
+        passed: lastAttempt.passed,
+        percentage: isFinite(percentage) ? percentage : 0,
+        testThreshold: lastAttempt.tests?.pass_threshold || 70,
+      };
+      showResults.value = true;
+
+      if (lastAttempt.user_test_answers) {
+        lastAttempt.user_test_answers.forEach((answer) => {
+          userAnswers.value[answer.block_id] = answer.selected_answer_id;
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Błąd podczas sprawdzania historii testu:", err);
+  }
+};
+
+const loadTest = async () => {
+  try {
+    isLoading.value = true;
+    const response = await useApiFrontend(`userTest/${testId}`);
+    if (response && response.test) {
+      const questionsResponse = await useApiFrontend(
+        `userTest/${testId}/blocks`
+      );
+      if (questionsResponse && questionsResponse.blocks) {
+        currentTest.value = {
+          ...response.test,
+          questions: questionsResponse.blocks,
+        };
+        if (!hasAttempted.value) {
+          userAnswers.value = {};
+          currentTest.value.questions.forEach((question) => {
+            userAnswers.value[question.id] = null;
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Błąd podczas ładowania testu:", err);
+    error.value = "Nie udało się załadować testu";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const selectAnswer = (questionId, answerId) => {
+  if (!hasAttempted.value) {
+    userAnswers.value[questionId] = answerId;
+  }
+};
+
+const submitTest = async () => {
+  try {
+    isSubmitting.value = true;
+    const response = await useApiFrontend(`userTest/${testId}/submit`, {
+      method: "POST",
+      body: {
+        answers: userAnswers.value,
+      },
+    });
+
+    if (response) {
+      const totalPoints = response.totalPoints || response.totalQuestions || 1;
+      const percentage = Math.round((response.score / totalPoints) * 100);
+      testResults.value = {
+        score: response.score,
+        totalPoints: totalPoints,
+        passed: response.passed,
+        correctAnswers: response.correctAnswers,
+        percentage: isFinite(percentage) ? percentage : 0,
+        testThreshold:
+          response.testThreshold || currentTest.value.pass_threshold,
+      };
+      showResults.value = true;
+      hasAttempted.value = true;
+    }
+  } catch (err) {
+    console.error("Błąd podczas przesyłania odpowiedzi:", err);
+    error.value = "Wystąpił błąd podczas przesyłania odpowiedzi";
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const resetTest = () => {
+  showResults.value = false;
+  hasAttempted.value = false;
+  if (currentTest.value && currentTest.value.questions) {
+    userAnswers.value = {};
+    currentTest.value.questions.forEach((question) => {
+      userAnswers.value[question.id] = null;
+    });
+  }
+};
+
+const backToChapter = () => {
+  router.push(`/course/${courseId}/chapter/${chapterId}`);
+};
+
+const isFormValid = computed(() => {
+  if (!currentTest.value?.questions) return false;
+  return currentTest.value.questions.every(
+    (q) => userAnswers.value[q.id] != null
+  );
+});
+
+//dodac odliczanie czasu
+</script>
+
+<template>
+  <div class="test-page-container">
+    <div
+      v-if="isLoading"
+      class="loading-wrapper"
+    >
+      <div class="loading-spinner"></div>
+      <p>Ładowanie...</p>
+    </div>
+    <div
+      v-else-if="error"
+      class="error-box"
+    >
+      <p>{{ error }}</p>
+      <button
+        @click="backToChapter"
+        class="back-button"
+      >
+        Powrót do rozdziału
+      </button>
+    </div>
+    <div
+      v-else-if="currentTest"
+      class="test-container"
+    >
+      <h1 class="test-title">{{ currentTest.title }}</h1>
+      <p
+        v-if="currentTest.description"
+        class="test-description"
+      >
+        {{ currentTest.description }}
+      </p>
+      <div
+        v-if="!showResults"
+        v-for="(question, qIndex) in currentTest.questions"
+        :key="question.id"
+        class="question-card"
+      >
+        <h3 class="question-number">
+          Pytanie {{ qIndex + 1 }}/{{ currentTest.questions.length }}
+        </h3>
+        <div class="question-text">{{ question.question_text }}</div>
+        <div class="points-info">Punkty: {{ question.points || 1 }}</div>
+        <div class="answers-list">
+          <div
+            v-for="answer in question.answers"
+            :key="answer.id"
+            class="answer-option"
+            :class="{
+              selected: userAnswers[question.id] === answer.id,
+              disabled: hasAttempted,
+            }"
+            @click="selectAnswer(question.id, answer.id)"
+          >
+            <div
+              class="answer-checkbox"
+              :class="{ checked: userAnswers[question.id] === answer.id }"
+            >
+              <div class="checkbox-inner"></div>
+            </div>
+            <div class="answer-content">
+              <span class="answer-letter"
+                >{{ ["A", "B", "C", "D"][answer.sort_order - 1] }}.</span
+              >
+              <span class="answer-text">{{ answer.text }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="test-actions"
+        v-if="!hasAttempted && !showResults"
+      >
+        <button
+          @click="backToChapter"
+          class="cancel-button"
+        >
+          Anuluj test
+        </button>
+        <button
+          @click="submitTest"
+          class="submit-button"
+          :disabled="isSubmitting || !isFormValid"
+        >
+          {{ isSubmitting ? "Przetwarzanie..." : "Zakończ test" }}
+        </button>
+      </div>
+      <div
+        v-if="showResults"
+        class="results-container"
+      >
+        <h2 class="results-title">Wyniki testu</h2>
+        <div
+          class="results-summary"
+          :class="{ passed: testResults.passed, failed: !testResults.passed }"
+        >
+          <div class="result-status">
+            <span
+              v-if="testResults.passed"
+              class="passed-badge"
+              >ZALICZONO</span
+            >
+            <span
+              v-else
+              class="failed-badge"
+              >NIEZALICZONO</span
+            >
+          </div>
+          <div class="result-details">
+            <div class="result-item">
+              <span class="result-label">Wynik:</span>
+              <span class="result-value"
+                >{{ testResults.score }} /
+                {{ testResults.totalPoints }} punktów</span
+              >
+            </div>
+            <div class="result-item">
+              <span class="result-label">Procent:</span>
+              <span class="result-value">{{ testResults.percentage }}%</span>
+            </div>
+            <div class="result-item">
+              <span class="result-label">Próg zaliczenia:</span>
+              <span class="result-value">{{ testResults.testThreshold }}%</span>
+            </div>
+          </div>
+        </div>
+        <div class="results-actions">
+          <button
+            @click="backToChapter"
+            class="back-button"
+          >
+            Wróć do rozdziału
+          </button>
+          <button
+            @click="resetTest"
+            class="retry-button"
+          >
+            Rozwiąż ponownie
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.test-page-container {
+  min-height: calc(100vh - 120px);
+}
+
+.loading-wrapper {
+  text-align: center;
+  padding: 30px 0;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px;
+  border: 4px solid rgba(235, 87, 87, 0.2);
+  border-top-color: #eb5757;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.test-status-badge.passed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.error-box {
+  background-color: #fef2f2;
+  padding: 20px;
+  border-radius: 8px;
+  color: #eb5757;
+}
+
+.test-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.test-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.test-description {
+  color: #6c757d;
+  margin-bottom: 20px;
+}
+
+.question-card {
+  background-color: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.question-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c757d;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.question-text {
+  font-size: 18px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.points-info {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 20px;
+}
+
+.answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.answer-option {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.answer-option:hover:not(.disabled) {
+  background-color: #f8f9fa;
+}
+
+.answer-option.selected {
+  background-color: #f1f8ff;
+  border-color: #0d6efd;
+}
+
+.answer-option.disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.answer-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #adb5bd;
+  border-radius: 50%;
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.answer-checkbox.checked {
+  border-color: #0d6efd;
+  background-color: #0d6efd;
+}
+
+.checkbox-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: white;
+  opacity: 0;
+}
+
+.answer-checkbox.checked .checkbox-inner {
+  opacity: 1;
+}
+
+.answer-content {
+  flex: 1;
+}
+
+.answer-letter {
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.test-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  margin-bottom: 40px;
+}
+
+.cancel-button {
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #ced4da;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-button:hover {
+  background-color: #e9ecef;
+}
+
+.submit-button {
+  background-color: #eb5757;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #d63031;
+}
+
+.submit-button:disabled {
+  background-color: #f8a8a8;
+  cursor: not-allowed;
+}
+
+.results-container {
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 2px dashed #e9ecef;
+}
+
+.results-title {
+  font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.results-summary {
+  background-color: white;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.results-summary.passed {
+  border: 2px solid #28a745;
+}
+
+.results-summary.failed {
+  border: 2px solid #dc3545;
+}
+
+.result-status {
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.passed-badge,
+.failed-badge {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 20px;
+  font-weight: 700;
+  border-radius: 30px;
+}
+
+.passed-badge {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.failed-badge {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.result-details {
+  text-align: left;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-label {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.result-value {
+  font-weight: 700;
+}
+
+.results-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.back-button {
+  background-color: #eb5757;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-bottom: 80px;
+  margin-top: 80px;
+}
+
+.back-button:hover {
+  background-color: #d63031;
+}
+
+.retry-button {
+  background-color: #4a90e2;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-bottom: 80px;
+  margin-top: 80px;
+}
+
+.retry-button:hover {
+  background-color: #3a7bd5;
+}
+
+@media (max-width: 768px) {
+  .test-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cancel-button,
+  .submit-button {
+    width: 100%;
+  }
+}
+</style>

@@ -5,7 +5,13 @@ definePageMeta({
 });
 
 import { ref, onMounted } from "vue";
-import { NodeHeading, NodeParagraph, NodeList, NodeImage, NodeVideo } from "#components";
+import {
+  NodeHeading,
+  NodeParagraph,
+  NodeList,
+  NodeImage,
+  NodeVideo,
+} from "#components";
 
 const route = useRoute();
 const router = useRouter();
@@ -15,6 +21,10 @@ const chapter = ref(null);
 const content = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
+
+const tests = ref([]);
+const testsLoading = ref(false);
+const testsError = ref(null);
 
 const getComponent = (type) => {
   switch (type) {
@@ -78,6 +88,7 @@ onMounted(async () => {
 
       return item;
     });
+    await fetchTests();
   } catch (err) {
     console.error("Błąd podczas ładowania rozdziału:", err);
     error.value = "Nie udało się załadować treści rozdziału";
@@ -85,6 +96,32 @@ onMounted(async () => {
     isLoading.value = false;
   }
 });
+
+const fetchTests = async () => {
+  try {
+    testsLoading.value = true;
+    testsError.value = null;
+
+    const response = await useApiFrontend(
+      `chapterTest/${courseId}/chapters/${chapterId}/tests`
+    );
+
+    if (response && response.tests) {
+      tests.value = response.tests;
+    } else {
+      tests.value = [];
+    }
+  } catch (err) {
+    console.error("Błąd podczas pobierania testów:", err);
+    testsError.value = "Nie udało się załadować testów dla tego rozdziału";
+  } finally {
+    testsLoading.value = false;
+  }
+};
+
+const startTest = (testId) => {
+  router.push(`/course/${courseId}/chapter/${chapterId}/${testId}`);
+};
 
 const goBackToCourse = () => {
   router.push(`/course/${courseId}`);
@@ -112,30 +149,98 @@ const goBackToCourse = () => {
         Powrót do kursu
       </button>
     </div>
-    <div v-else>
-      <h1 class="chapter-title">{{ chapter?.title }}</h1>
-      <div
-        v-if="chapter && content.length > 0"
-        class="chapter-content"
-      >
+    <div v-else-if="!$route.params.testId">
+      <div class="main-content">
+        <h1 class="chapter-title">{{ chapter?.title }}</h1>
         <div
-          v-for="block in content"
-          :key="block.id"
-          class="content-block"
+          v-if="chapter && content.length > 0"
+          class="chapter-content"
         >
-          <component
-            :is="getComponent(block.type)"
-            v-bind="block.params"
-            :class="block.params.format"
-          />
+          <div
+            v-for="block in content"
+            :key="block.id"
+            class="content-block"
+          >
+            <component
+              :is="getComponent(block.type)"
+              v-bind="block.params"
+              :class="block.params.format"
+            />
+          </div>
+        </div>
+        <div
+          v-else
+          class="empty-content"
+        >
+          <p>Ten rozdział nie ma jeszcze treści.</p>
+        </div>
+
+        <div class="tests-section">
+          <h2>Testy do rozdziału</h2>
+          <div
+            v-if="testsLoading"
+            class="tests-loading"
+          >
+            <div class="loading-spinner"></div>
+            <p>Ładowanie testów...</p>
+          </div>
+          <div
+            v-else-if="testsError"
+            class="tests-error"
+          >
+            <p>{{ testsError }}</p>
+          </div>
+          <div
+            v-else-if="tests.length === 0"
+            class="no-tests"
+          >
+            <p>Brak dostępnych testów dla tego rozdziału.</p>
+          </div>
+          <div
+            v-else
+            class="tests-list"
+          >
+            <div
+              v-for="test in tests"
+              :key="test.id"
+              class="test-card"
+            >
+              <h3>{{ test.title }}</h3>
+              <p
+                v-if="test.description"
+                class="test-description"
+              >
+                {{ test.description }}
+              </p>
+              <div class="test-info">
+                <div class="info-item">
+                  <span class="info-label">Próg zaliczenia:</span>
+                  <span class="info-value">{{ test.pass_threshold }}%</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Czas:</span>
+                  <span class="info-value">{{
+                    test.time_limit ? `${test.time_limit} min` : "Bez limitu"
+                  }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Liczba pytań:</span>
+                  <span class="info-value">{{
+                    test._count?.test_blocks || 0
+                  }}</span>
+                </div>
+              </div>
+              <button
+                @click="startTest(test.id)"
+                class="start-test-btn"
+              >
+                Rozpocznij test
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <div
-        v-else
-        class="empty-content"
-      >
-        <p>Ten rozdział nie ma jeszcze treści.</p>
-      </div>
+
       <div class="chapter-actions">
         <button
           @click="goBackToCourse"
@@ -145,6 +250,7 @@ const goBackToCourse = () => {
         </button>
       </div>
     </div>
+    <NuxtPage />
   </div>
 </template>
 
@@ -183,6 +289,12 @@ const goBackToCourse = () => {
   border-top-color: #eb5757;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-box {
@@ -333,5 +445,107 @@ const goBackToCourse = () => {
   margin-left: auto;
   margin-right: 0;
   display: block;
+}
+
+.tests-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.tests-section h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.tests-loading {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.tests-error {
+  background-color: #fef2f2;
+  padding: 15px;
+  border-radius: 4px;
+  color: #eb5757;
+  margin-bottom: 20px;
+}
+
+.no-tests {
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  color: #6c757d;
+}
+
+.tests-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.test-card {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.test-card h3 {
+  font-size: 18px;
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #343a40;
+}
+
+.test-description {
+  color: #6c757d;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.test-info {
+  margin-bottom: 15px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.info-label {
+  color: #6c757d;
+}
+
+.info-value {
+  font-weight: 600;
+  color: #343a40;
+}
+
+.start-test-btn {
+  background-color: #eb5757;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: auto;
+  transition: background-color 0.2s;
+}
+
+.start-test-btn:hover {
+  background-color: #d63031;
+}
+
+@media (max-width: 768px) {
+  .tests-list {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

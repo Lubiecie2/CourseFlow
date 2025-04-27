@@ -1,6 +1,12 @@
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
 
+const router = useRouter();
+
+const goToCourses = () => {
+  router.push("/courses");
+};
+
 const leftTextRef = ref<HTMLElement | null>(null);
 const isVisible = ref(false);
 
@@ -43,7 +49,12 @@ onMounted(() => {
             się, jak wiedza oraz pasja naszej kadry mogą zmienić Twoją
             przyszłość!
           </p>
-          <button class="cta-button">Zapisz się teraz</button>
+          <button
+            class="cta-button"
+            @click="goToCourses"
+          >
+            Zapisz się teraz
+          </button>
         </div>
       </div>
       <div class="right-side"></div>

@@ -20,6 +20,14 @@ const goToProfile = () => {
   router.push("/profile/profil");
 };
 
+const goToMainPage = () => {
+  router.push("/");
+};
+
+const goToAdminPanel = () => {
+  router.push("/admin");
+};
+
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
@@ -32,7 +40,11 @@ const { logout } = userStore;
 <template>
   <div>
     <div class="navbar">
-      <div class="nav-logo">
+      <div
+        class="nav-logo"
+        @click="goToMainPage"
+        style="cursor: pointer"
+      >
         <img
           src="../public/images/Logo.png"
           alt="Logo"
@@ -49,12 +61,13 @@ const { logout } = userStore;
         class="nav-button-container"
         v-if="isLogged"
       >
-        <NuxtLink
-          to="/admin"
+        <button
           class="red-button"
+          @click="goToAdminPanel"
           v-if="usePermissionGuard('PANEL_SHOW_ADMIN_PANEL')"
-          >Zarządzanie stroną
-        </NuxtLink>
+        >
+          Zarządzaj stroną
+        </button>
         <button
           class="red-button"
           @click="goToCourses"
@@ -116,12 +129,13 @@ const { logout } = userStore;
         class="mobile-menu"
         v-if="menuOpen"
       >
-        <NuxtLink
-          to="/admin"
+        <button
           class="red-button"
+          @click="goToAdminPanel"
           v-if="usePermissionGuard('PANEL_SHOW_ADMIN_PANEL')"
-          >Zarządzanie stroną</NuxtLink
         >
+          Zarządzaj stroną
+        </button>
         <button class="red-button">Kursy</button>
 
         <template v-if="isLogged">
@@ -212,21 +226,51 @@ const { logout } = userStore;
 }
 
 .red-button {
-  background-color: #eb5757;
+  background-color: rgba(235, 87, 87, 0.85);
   color: white;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
   border: none;
-  border-radius: 8px;
-  padding: 8px 24px;
+  border-radius: 10px;
+  padding: 10px 20px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
   margin-right: 20px;
-  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
 .red-button:hover {
-  background-color: #c54242;
+  background-color: rgba(235, 87, 87, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.red-button:active {
+  transform: translateY(0);
+  background-color: rgba(194, 72, 72, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.red-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.red-button:active::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  transition: 0s;
 }
 
 .mobile-menu {
