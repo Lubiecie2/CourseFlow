@@ -4,7 +4,7 @@ definePageMeta({
   middleware: "auth",
 });
 
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onBeforeMount } from "vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -19,6 +19,8 @@ const testResults = ref(null);
 const showResults = ref(false);
 const isSubmitting = ref(false);
 const hasAttempted = ref(false);
+const timeLeft = ref(0);
+const timerInterval = ref(null);
 
 onMounted(async () => {
   await checkPreviousAttempt();
@@ -70,10 +72,12 @@ const loadTest = async () => {
         if (!hasAttempted.value) {
           userAnswers.value = {};
           currentTest.value.questions.forEach((question) => {
-            userAnswers.value[question.id] = null;
+            userAnswers.value[question.id] =
+              question.block_type === "multiple_choice" ? [] : null;
           });
         }
       }
+      startTimer();
     }
   } catch (err) {
     console.error("Błąd podczas ładowania testu:", err);
@@ -83,9 +87,20 @@ const loadTest = async () => {
   }
 };
 
-const selectAnswer = (questionId, answerId) => {
-  if (!hasAttempted.value) {
-    userAnswers.value[questionId] = answerId;
+const selectAnswer = (question, answerId) => {
+  if (hasAttempted.value) return;
+  if (question.block_type === "multiple_choice") {
+    if (!Array.isArray(userAnswers.value[question.id])) {
+      userAnswers.value[question.id] = [];
+    }
+    const index = userAnswers.value[question.id].indexOf(answerId);
+    if (index === -1) {
+      userAnswers.value[question.id].push(answerId);
+    } else {
+      userAnswers.value[question.id].splice(index, 1);
+    }
+  } else {
+    userAnswers.value[question.id] = answerId;
   }
 };
 
@@ -114,6 +129,9 @@ const submitTest = async () => {
       showResults.value = true;
       hasAttempted.value = true;
     }
+    if (timerInterval.value) {
+      clearInterval(timerInterval.value);
+    }
   } catch (err) {
     console.error("Błąd podczas przesyłania odpowiedzi:", err);
     error.value = "Wystąpił błąd podczas przesyłania odpowiedzi";
@@ -125,11 +143,15 @@ const submitTest = async () => {
 const resetTest = () => {
   showResults.value = false;
   hasAttempted.value = false;
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value);
+  }
   if (currentTest.value && currentTest.value.questions) {
     userAnswers.value = {};
     currentTest.value.questions.forEach((question) => {
       userAnswers.value[question.id] = null;
     });
+    startTimer();
   }
 };
 
@@ -139,12 +161,57 @@ const backToChapter = () => {
 
 const isFormValid = computed(() => {
   if (!currentTest.value?.questions) return false;
-  return currentTest.value.questions.every(
-    (q) => userAnswers.value[q.id] != null
-  );
+  return currentTest.value.questions.every((q) => {
+    if (q.block_type === "multiple_choice") {
+      return (
+        Array.isArray(userAnswers.value[q.id]) &&
+        userAnswers.value[q.id].length > 0
+      );
+    }
+    return userAnswers.value[q.id] != null;
+  });
 });
 
-//dodac odliczanie czasu
+const isAnswerSelected = (question, answerId) => {
+  if (question.block_type === "multiple_choice") {
+    return (
+      Array.isArray(userAnswers.value[question.id]) &&
+      userAnswers.value[question.id].includes(answerId)
+    );
+  }
+  return userAnswers.value[question.id] === answerId;
+};
+
+const formattedTimeLeft = computed(() => {
+  const minutes = Math.floor(timeLeft.value / 60);
+  const seconds = timeLeft.value % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+});
+
+const startTimer = () => {
+  if (hasAttempted.value || !currentTest.value?.time_limit) return;
+  timeLeft.value = currentTest.value.time_limit * 60;
+  timerInterval.value = setInterval(() => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
+    } else {
+      clearInterval(timerInterval.value);
+      if (!hasAttempted.value) {
+        handleTimeUp();
+      }
+    }
+  }, 1000);
+};
+
+const handleTimeUp = async () => {
+  await submitTest();
+};
+
+onBeforeUnmount(() => {
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value);
+  }
+});
 </script>
 
 <template>
@@ -180,6 +247,18 @@ const isFormValid = computed(() => {
         {{ currentTest.description }}
       </p>
       <div
+        class="timer-container"
+        v-if="currentTest.time_limit && !showResults"
+      >
+        <div
+          class="timer"
+          :class="{ 'time-low': timeLeft < 60 }"
+        >
+          <i class="timer-icon">⏱</i>
+          <span class="timer-text">{{ formattedTimeLeft }}</span>
+        </div>
+      </div>
+      <div
         v-if="!showResults"
         v-for="(question, qIndex) in currentTest.questions"
         :key="question.id"
@@ -196,16 +275,25 @@ const isFormValid = computed(() => {
             :key="answer.id"
             class="answer-option"
             :class="{
-              selected: userAnswers[question.id] === answer.id,
+              selected: isAnswerSelected(question, answer.id),
               disabled: hasAttempted,
             }"
-            @click="selectAnswer(question.id, answer.id)"
+            @click="selectAnswer(question, answer.id)"
           >
             <div
               class="answer-checkbox"
-              :class="{ checked: userAnswers[question.id] === answer.id }"
+              :class="{
+                checked: isAnswerSelected(question, answer.id),
+                'checkbox-multiple': question.block_type === 'multiple_choice',
+              }"
             >
-              <div class="checkbox-inner"></div>
+              <div
+                class="checkbox-inner"
+                :class="{
+                  'checkbox-multiple-inner':
+                    question.block_type === 'multiple_choice',
+                }"
+              ></div>
             </div>
             <div class="answer-content">
               <span class="answer-letter"
@@ -457,7 +545,8 @@ const isFormValid = computed(() => {
   border-radius: 4px;
   cursor: pointer;
   height: 45px;
-  margin-top: 50px;
+  margin-top: 0;
+  min-width: 120px;
 }
 
 .cancel-button:hover {
@@ -474,7 +563,8 @@ const isFormValid = computed(() => {
   font-weight: 500;
   transition: background-color 0.2s;
   height: 45px;
-  margin-top: 50px;
+  margin-top: 0px;
+  min-width: 120px;
 }
 
 .submit-button:hover:not(:disabled) {
@@ -612,6 +702,60 @@ const isFormValid = computed(() => {
   .cancel-button,
   .submit-button {
     width: 100%;
+  }
+}
+
+.answer-checkbox.chebox-multiple {
+  border-radius: 4px;
+}
+
+.checkbox-inner.checkbox-multiple-inner {
+  border-radius: 2px;
+}
+
+.timer-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+}
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 6px 12px;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+  min-width: 90px;
+}
+
+.timer.time-low {
+  background-color: #ffecec;
+  color: #dc3545;
+  animation: pulse 1s infinite;
+}
+
+.timer-icon {
+  margin-right: 6px;
+  font-style: normal;
+}
+
+.timer-text {
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  width: 40px;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
   }
 }
 </style>

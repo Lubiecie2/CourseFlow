@@ -464,6 +464,7 @@ const saveQuestionsOrder = async () => {
           >
             <option value="single_choice">Jednokrotny wybór (ABCD)</option>
             <option value="multiple_choice">Wielokrotny wybór (ABCD)</option>
+            <option value="text_input">Odpowiedź tekstowa</option>
           </select>
         </div>
 
