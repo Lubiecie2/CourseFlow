@@ -456,6 +456,8 @@ const isFormValid = computed(() => {
   padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
+  height: 45px;
+  margin-top: 50px;
 }
 
 .cancel-button:hover {
@@ -471,6 +473,8 @@ const isFormValid = computed(() => {
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
+  height: 45px;
+  margin-top: 50px;
 }
 
 .submit-button:hover:not(:disabled) {

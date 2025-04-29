@@ -1,4 +1,6 @@
 <script setup>
+import draggable from "vuedraggable";
+
 definePageMeta({
   layout: "login",
   middleware: "auth",
@@ -186,6 +188,25 @@ const cancelQuestion = () => {
   };
 };
 
+// ------ Obsługa zmiany typu pytania --------------------------
+
+const handleQuestionTypeChange = () => {
+  newQuestion.value.answers = newQuestion.value.answers.map((answer) => {
+    return { ...answer, is_correct: false };
+  });
+
+  if (newQuestion.value.block_type === "single_choice") {
+    newQuestion.value.answers[0].is_correct = true;
+  }
+};
+
+// ------ Przełączanie poprawnych odpowiedzi (dla wielokrotnego wyboru) ---------
+
+const toggleCorrectAnswer = (index) => {
+  newQuestion.value.answers[index].is_correct =
+    !newQuestion.value.answers[index].is_correct;
+};
+
 // ------ Zapisywanie nowego pytania ---------------------------------
 
 const saveQuestion = async () => {
@@ -197,6 +218,22 @@ const saveQuestion = async () => {
   if (newQuestion.value.answers.some((a) => !a.text.trim())) {
     errorMessage.value = "Wszystkie odpowiedzi muszą mieć treść";
     return;
+  }
+
+  if (!newQuestion.value.answers.some((a) => a.is_correct)) {
+    errorMessage.value = "Wybierz przynajmniej jedną poprawną odpowiedź";
+    return;
+  }
+
+  if (newQuestion.value.block_type === "single_choice") {
+    const correctCount = newQuestion.value.answers.filter(
+      (a) => a.is_correct
+    ).length;
+    if (correctCount !== 1) {
+      errorMessage.value =
+        "W pytaniu jednokrotnego wyboru musi być dokładnie jedna poprawna odpowiedź";
+      return;
+    }
   }
 
   try {
@@ -242,6 +279,29 @@ const deleteQuestion = async (blockId) => {
   } catch (err) {
     console.error("Błąd podczas usuwania pytania:", err);
     errorMessage.value = "Nie udało się usunąć pytania";
+  }
+};
+
+// ------ Zapisywanie zmienionej kolejności pytań ----------------------
+
+const saveQuestionsOrder = async () => {
+  try {
+    const order = questions.value.map((q) => q.id);
+
+    const response = await useApiFrontend(`tests/${testId}/reorder`, {
+      method: "PATCH",
+      body: { order },
+    });
+
+    if (response && response.success) {
+      successMessage.value = "Kolejność pytań została zaktualizowana";
+      setTimeout(() => {
+        successMessage.value = "";
+      }, 3000);
+    }
+  } catch (err) {
+    console.error("Błąd podczas zapisywania kolejności pytań:", err);
+    errorMessage.value = "Nie udało się zaktualizować kolejności pytań";
   }
 };
 </script>
@@ -345,44 +405,50 @@ const deleteQuestion = async (blockId) => {
     <div class="questions-section">
       <h2 class="section-title">Pytania</h2>
 
-      <div
+      <draggable
         v-if="questions.length > 0"
+        v-model="questions"
         class="questions-list"
+        item-key="id"
+        handle=".drag-handle"
+        @end="saveQuestionsOrder"
+        :animation="200"
+        ghost-class="ghost-item"
       >
-        <div
-          v-for="(question, index) in questions"
-          :key="question.id"
-          class="question-item"
-        >
-          <div class="question-header">
-            <h3>Pytanie {{ index + 1 }}</h3>
-            <button
-              @click="deleteQuestion(question.id)"
-              class="delete-btn"
-            >
-              Usuń
-            </button>
-          </div>
-          <p class="question-content">{{ question.question_text }}</p>
-          <div class="answers-container">
-            <div
-              v-for="(answer, i) in question.answers"
-              :key="i"
-              class="answer-row"
-              :class="{ correct: answer.is_correct }"
-            >
-              <span class="answer-letter">{{ ["A", "B", "C", "D"][i] }}</span>
-              <span>{{ answer.text }}</span>
-              <span
-                v-if="answer.is_correct"
-                class="correct-mark"
-                >(poprawna)</span
+        <template #item="{ element: question, index }">
+          <div class="question-item">
+            <div class="question-header">
+              <div class="drag-handle">
+                <div class="grip-lines"></div>
+              </div>
+              <h3>Pytanie {{ index + 1 }}</h3>
+              <button
+                @click="deleteQuestion(question.id)"
+                class="delete-btn"
               >
+                Usuń
+              </button>
+            </div>
+            <p class="question-content">{{ question.question_text }}</p>
+            <div class="answers-container">
+              <div
+                v-for="(answer, i) in question.answers"
+                :key="i"
+                class="answer-row"
+                :class="{ correct: answer.is_correct }"
+              >
+                <span class="answer-letter">{{ ["A", "B", "C", "D"][i] }}</span>
+                <span>{{ answer.text }}</span>
+                <span
+                  v-if="answer.is_correct"
+                  class="correct-mark"
+                  >(poprawna)</span
+                >
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-
+        </template>
+      </draggable>
       <div
         v-if="showQuestionForm"
         class="question-form"
@@ -394,8 +460,10 @@ const deleteQuestion = async (blockId) => {
           <select
             v-model="newQuestion.block_type"
             class="form-control"
+            @change="handleQuestionTypeChange"
           >
             <option value="single_choice">Jednokrotny wybór (ABCD)</option>
+            <option value="multiple_choice">Wielokrotny wybór (ABCD)</option>
           </select>
         </div>
 
@@ -422,17 +490,39 @@ const deleteQuestion = async (blockId) => {
         </div>
 
         <div class="form-group">
-          <label>Odpowiedzi (wybierz jedną poprawną):</label>
+          <label>
+            Odpowiedzi
+            <template v-if="newQuestion.block_type === 'single_choice'"
+              >(wybierz jedną poprawną):</template
+            >
+            <template v-else-if="newQuestion.block_type === 'multiple_choice'"
+              >(zaznacz wszystkie poprawne):</template
+            >
+            <template v-else>(wybierz odpowiedź):</template>
+          </label>
           <div
             v-for="(answer, index) in newQuestion.answers"
             :key="index"
             class="answer-input-row"
           >
             <input
+              v-if="newQuestion.block_type === 'single_choice'"
               type="radio"
               name="correct-answer"
               :checked="answer.is_correct"
               @change="setCorrectAnswer(index)"
+            />
+            <input
+              v-else-if="newQuestion.block_type === 'multiple_choice'"
+              type="checkbox"
+              :checked="answer.is_correct"
+              @change="toggleCorrectAnswer(index)"
+            />
+            <input
+              v-else
+              type="checkbox"
+              :checked="answer.is_correct"
+              @change="toggleCorrectAnswer(index)"
             />
             <span class="answer-label">{{ ["A", "B", "C", "D"][index] }}</span>
             <input
@@ -709,5 +799,71 @@ const deleteQuestion = async (blockId) => {
   border-radius: 8px;
   padding: 15px;
   margin-bottom: 20px;
+}
+.answer-input-row input[type="checkbox"] {
+  width: auto;
+  margin-right: 5px;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+  cursor: pointer;
+  accent-color: #eb5757;
+}
+.answer-input-row input[type="checkbox"] {
+  width: auto;
+  margin-right: 5px;
+  flex-shrink: 0;
+  height: 16px;
+  width: 16px;
+  cursor: pointer;
+  accent-color: #eb5757;
+}
+.drag-handle {
+  cursor: grab;
+  margin-right: 10px;
+  color: #999;
+  display: flex;
+  align-items: center;
+}
+
+.drag-handle i {
+  font-size: 14px;
+}
+
+.ghost-item {
+  opacity: 0.5;
+  background: #f3f3f3;
+  border: 1px dashed #ccc;
+}
+
+.question-header {
+  display: flex;
+  align-items: center;
+}
+.drag-handle {
+  cursor: grab;
+  margin-right: 10px;
+  color: #999;
+  font-size: 18px;
+  user-select: none;
+}
+.drag-handle {
+  cursor: grab;
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.grip-lines {
+  width: 16px;
+  height: 16px;
+  background-image: linear-gradient(to bottom, #999 2px, transparent 2px);
+  background-size: 100% 4px;
+  background-repeat: repeat-y;
 }
 </style>
