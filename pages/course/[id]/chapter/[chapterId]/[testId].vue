@@ -4,7 +4,7 @@ definePageMeta({
   middleware: "auth",
 });
 
-import { ref, onMounted, computed, onBeforeMount } from "vue";
+import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -15,12 +15,14 @@ const isLoading = ref(true);
 const error = ref(null);
 const currentTest = ref(null);
 const userAnswers = ref({});
+const textInputAnswers = ref({});
 const testResults = ref(null);
 const showResults = ref(false);
 const isSubmitting = ref(false);
 const hasAttempted = ref(false);
 const timeLeft = ref(0);
 const timerInterval = ref(null);
+const matchingAnswers = ref({});
 
 onMounted(async () => {
   await checkPreviousAttempt();
@@ -47,7 +49,11 @@ const checkPreviousAttempt = async () => {
 
       if (lastAttempt.user_test_answers) {
         lastAttempt.user_test_answers.forEach((answer) => {
-          userAnswers.value[answer.block_id] = answer.selected_answer_id;
+          if (answer.text_answer) {
+            textInputAnswers.value[answer.block_id] = answer.text_answer;
+          } else {
+            userAnswers.value[answer.block_id] = answer.selected_answer_id;
+          }
         });
       }
     }
@@ -71,9 +77,18 @@ const loadTest = async () => {
         };
         if (!hasAttempted.value) {
           userAnswers.value = {};
+          textInputAnswers.value = {};
+          matchingAnswers.value = {};
           currentTest.value.questions.forEach((question) => {
-            userAnswers.value[question.id] =
-              question.block_type === "multiple_choice" ? [] : null;
+            if (question.block_type === "multiple_choice") {
+              userAnswers.value[question.id] = [];
+            } else if (question.block_type === "text_input") {
+              textInputAnswers.value[question.id] = "";
+            } else if (question.block_type === "matching") {
+              matchingAnswers.value[question.id] = {};
+            } else {
+              userAnswers.value[question.id] = null;
+            }
           });
         }
       }
@@ -99,18 +114,31 @@ const selectAnswer = (question, answerId) => {
     } else {
       userAnswers.value[question.id].splice(index, 1);
     }
-  } else {
+  } else if (question.block_type !== "text_input") {
     userAnswers.value[question.id] = answerId;
   }
+};
+
+const handleTextInputChange = (questionId, value) => {
+  if (hasAttempted.value) return;
+  textInputAnswers.value[questionId] = value;
 };
 
 const submitTest = async () => {
   try {
     isSubmitting.value = true;
+    const answers = { ...userAnswers.value };
+    Object.keys(textInputAnswers.value).forEach((questionId) => {
+      answers[questionId] = textInputAnswers.value[questionId];
+    });
+    Object.keys(matchingAnswers.value).forEach((questionId) => {
+      answers[questionId] = matchingAnswers.value[questionId];
+    });
+
     const response = await useApiFrontend(`userTest/${testId}/submit`, {
       method: "POST",
       body: {
-        answers: userAnswers.value,
+        answers: answers,
       },
     });
 
@@ -148,8 +176,18 @@ const resetTest = () => {
   }
   if (currentTest.value && currentTest.value.questions) {
     userAnswers.value = {};
+    textInputAnswers.value = {};
+    matchingAnswers.value = {};
     currentTest.value.questions.forEach((question) => {
-      userAnswers.value[question.id] = null;
+      if (question.block_type === "multiple_choice") {
+        userAnswers.value[question.id] = [];
+      } else if (question.block_type === "text_input") {
+        textInputAnswers.value[question.id] = "";
+      } else if (question.block_type === "matching") {
+        matchingAnswers.value[question.id] = {};
+      } else {
+        userAnswers.value[question.id] = null;
+      }
     });
     startTimer();
   }
@@ -166,6 +204,16 @@ const isFormValid = computed(() => {
       return (
         Array.isArray(userAnswers.value[q.id]) &&
         userAnswers.value[q.id].length > 0
+      );
+    } else if (q.block_type === "text_input") {
+      return textInputAnswers.value[q.id]?.trim() !== "";
+    } else if (q.block_type === "matching") {
+      const matches = matchingAnswers.value[q.id] || {};
+      return (
+        Object.keys(matches).length === q.answers.length &&
+        Object.values(matches).every(
+          (item) => item !== undefined && item !== ""
+        )
       );
     }
     return userAnswers.value[q.id] != null;
@@ -212,6 +260,14 @@ onBeforeUnmount(() => {
     clearInterval(timerInterval.value);
   }
 });
+
+const updateMatching = (questionId, leftId, rightItem) => {
+  if (hasAttempted.value) return;
+  if (!matchingAnswers.value[questionId]) {
+    matchingAnswers.value[questionId] = {};
+  }
+  matchingAnswers.value[questionId][leftId] = rightItem;
+};
 </script>
 
 <template>
@@ -269,7 +325,14 @@ onBeforeUnmount(() => {
         </h3>
         <div class="question-text">{{ question.question_text }}</div>
         <div class="points-info">Punkty: {{ question.points || 1 }}</div>
-        <div class="answers-list">
+
+        <div
+          v-if="
+            question.block_type !== 'text_input' &&
+            question.block_type !== 'matching'
+          "
+          class="answers-list"
+        >
           <div
             v-for="answer in question.answers"
             :key="answer.id"
@@ -303,7 +366,70 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
+
+        <div
+          v-else-if="question.block_type === 'text_input'"
+          class="text-input-container"
+        >
+          <input
+            type="text"
+            v-model="textInputAnswers[question.id]"
+            class="text-answer-input"
+            placeholder="Wpisz odpowiedź..."
+            :disabled="hasAttempted"
+            @input="handleTextInputChange(question.id, $event.target.value)"
+          />
+        </div>
+
+        <div
+          v-else-if="question.block_type === 'matching'"
+          class="matching-question-container"
+        >
+          <div class="matching-items">
+            <div class="matching-left-column">
+              <div
+                v-for="answer in question.answers"
+                :key="answer.id"
+                class="matching-left-item"
+              >
+                <span class="matching-item-text">{{ answer.left_item }}</span>
+                <span class="matching-arrow">→</span>
+              </div>
+            </div>
+
+            <div class="matching-right-column">
+              <div
+                v-for="answer in question.answers"
+                :key="answer.id"
+                class="matching-right-item"
+              >
+                <select
+                  v-model="matchingAnswers[question.id][answer.id]"
+                  class="matching-select"
+                  :disabled="hasAttempted"
+                >
+                  <option value="">Wybierz...</option>
+                  <option
+                    v-for="rightOption in question.answers"
+                    :key="rightOption.id"
+                    :value="rightOption.right_item"
+                    :disabled="
+                      Object.values(
+                        matchingAnswers[question.id] || {}
+                      ).includes(rightOption.right_item) &&
+                      matchingAnswers[question.id][answer.id] !==
+                        rightOption.right_item
+                    "
+                  >
+                    {{ rightOption.right_item }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
       <div
         class="test-actions"
         v-if="!hasAttempted && !showResults"
@@ -485,7 +611,7 @@ onBeforeUnmount(() => {
 
 .answer-option.selected {
   background-color: #f1f8ff;
-  border-color: #0d6efd;
+  border-color: rgba(235, 87, 87, 0.85);
 }
 
 .answer-option.disabled {
@@ -505,8 +631,8 @@ onBeforeUnmount(() => {
 }
 
 .answer-checkbox.checked {
-  border-color: #0d6efd;
-  background-color: #0d6efd;
+  border-color: rgba(235, 87, 87, 0.85);
+  background-color: rgba(235, 87, 87, 0.85);
 }
 
 .checkbox-inner {
@@ -530,6 +656,89 @@ onBeforeUnmount(() => {
   margin-right: 10px;
 }
 
+.text-input-container {
+  margin-top: 10px;
+}
+
+.text-answer-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.text-answer-input:focus {
+  outline: none;
+  border-color: rgba(235, 87, 87, 0.85);
+  box-shadow: 0 0 0 2px rgba(235, 87, 87, 0.85);
+}
+
+.text-answer-input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.matching-question-container {
+  margin: 20px 0;
+  padding: 10px;
+}
+
+.matching-items {
+  display: flex;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.matching-left-column,
+.matching-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.matching-left-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  min-height: 50px;
+}
+
+.matching-right-item {
+  display: flex;
+}
+
+.matching-item-text {
+  font-weight: 500;
+}
+
+.matching-arrow {
+  color: #6c757d;
+  margin: 0 10px;
+}
+
+.matching-select {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+  height: 100%;
+  min-height: 50px;
+}
+
+.matching-select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
 .test-actions {
   display: flex;
   justify-content: space-between;
@@ -544,9 +753,10 @@ onBeforeUnmount(() => {
   padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: 500;
   height: 45px;
   margin-top: 0;
-  min-width: 120px;
+  min-width: 150px;
 }
 
 .cancel-button:hover {
@@ -564,7 +774,7 @@ onBeforeUnmount(() => {
   transition: background-color 0.2s;
   height: 45px;
   margin-top: 0px;
-  min-width: 120px;
+  max-width: 150px;
 }
 
 .submit-button:hover:not(:disabled) {

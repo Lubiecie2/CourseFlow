@@ -136,10 +136,20 @@ const { logout } = userStore;
         >
           Zarządzaj stroną
         </button>
-        <button class="red-button">Kursy</button>
+        <button
+          class="red-button"
+          @click="goToCourses"
+        >
+          Kursy
+        </button>
 
         <template v-if="isLogged">
-          <button class="red-button">Profil</button>
+          <button
+            class="red-button"
+            @click="goToProfile"
+          >
+            Profil
+          </button>
           <button
             class="red-button"
             @click="logout"

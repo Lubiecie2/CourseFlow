@@ -110,13 +110,6 @@ const { logout } = userStore;
         </button>
         <button
           class="red-button"
-          @click="goToTests"
-          v-if="usePermissionGuard('PANEL_SHOW_TESTS')"
-        >
-          Testy
-        </button>
-        <button
-          class="red-button"
           @click="goToMainPage"
         >
           Strona główna

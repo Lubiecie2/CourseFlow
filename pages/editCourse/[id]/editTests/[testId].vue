@@ -32,6 +32,8 @@ const questions = ref([]);
 
 const showQuestionForm = ref(false);
 const isSavingQuestion = ref(false);
+const showDeleteDialog = ref(false);
+const questionToDelete = ref(null);
 
 const newQuestion = ref({
   block_type: "single_choice",
@@ -191,12 +193,23 @@ const cancelQuestion = () => {
 // ------ Obsługa zmiany typu pytania --------------------------
 
 const handleQuestionTypeChange = () => {
-  newQuestion.value.answers = newQuestion.value.answers.map((answer) => {
-    return { ...answer, is_correct: false };
-  });
-
-  if (newQuestion.value.block_type === "single_choice") {
-    newQuestion.value.answers[0].is_correct = true;
+  if (newQuestion.value.block_type === "text_input") {
+    newQuestion.value.answers = [{ text: "", is_correct: true }];
+  } else if (newQuestion.value.block_type === "matching") {
+    newQuestion.value.answers = [
+      { left_item: "", right_item: "", is_correct: true },
+      { left_item: "", right_item: "", is_correct: true },
+    ];
+  } else {
+    newQuestion.value.answers = [
+      {
+        text: "",
+        is_correct: newQuestion.value.block_type === "single_choice",
+      },
+      { text: "", is_correct: false },
+      { text: "", is_correct: false },
+      { text: "", is_correct: false },
+    ];
   }
 };
 
@@ -215,24 +228,51 @@ const saveQuestion = async () => {
     return;
   }
 
-  if (newQuestion.value.answers.some((a) => !a.text.trim())) {
-    errorMessage.value = "Wszystkie odpowiedzi muszą mieć treść";
-    return;
-  }
-
-  if (!newQuestion.value.answers.some((a) => a.is_correct)) {
-    errorMessage.value = "Wybierz przynajmniej jedną poprawną odpowiedź";
-    return;
-  }
-
-  if (newQuestion.value.block_type === "single_choice") {
-    const correctCount = newQuestion.value.answers.filter(
-      (a) => a.is_correct
-    ).length;
-    if (correctCount !== 1) {
-      errorMessage.value =
-        "W pytaniu jednokrotnego wyboru musi być dokładnie jedna poprawna odpowiedź";
+  if (newQuestion.value.block_type === "text_input") {
+    if (!newQuestion.value.answers[0].text.trim()) {
+      errorMessage.value = "Poprawna odpowiedź jest wymagana";
       return;
+    }
+  } else if (newQuestion.value.block_type === "matching") {
+    if (newQuestion.value.answers.length < 2) {
+      errorMessage.value =
+        "Pytanie typu dopasowanie musi zawierać co najmniej 2 pary elementów";
+      return;
+    }
+
+    for (const answer of newQuestion.value.answers) {
+      if (!answer.left_item.trim() || !answer.right_item.trim()) {
+        errorMessage.value = "Wszystkie pola dopasowania muszą być wypełnione";
+        return;
+      }
+    }
+    const rightItems = newQuestion.value.answers.map((a) =>
+      a.right_item.trim()
+    );
+    if (new Set(rightItems).size !== rightItems.length) {
+      errorMessage.value = "Elementy w prawej kolumnie nie mogą się powtarzać";
+      return;
+    }
+  } else {
+    if (newQuestion.value.answers.some((a) => !a.text.trim())) {
+      errorMessage.value = "Wszystkie odpowiedzi muszą mieć treść";
+      return;
+    }
+
+    if (!newQuestion.value.answers.some((a) => a.is_correct)) {
+      errorMessage.value = "Wybierz przynajmniej jedną poprawną odpowiedź";
+      return;
+    }
+
+    if (newQuestion.value.block_type === "single_choice") {
+      const correctCount = newQuestion.value.answers.filter(
+        (a) => a.is_correct
+      ).length;
+      if (correctCount !== 1) {
+        errorMessage.value =
+          "W pytaniu jednokrotnego wyboru musi być dokładnie jedna poprawna odpowiedź";
+        return;
+      }
     }
   }
 
@@ -261,13 +301,26 @@ const saveQuestion = async () => {
 
 // ------ Usuwanie danego bloku z pytaniem ----------------------
 
-const deleteQuestion = async (blockId) => {
-  if (!confirm("Czy na pewno chcesz usunąć to pytanie?")) return;
+const confirmDelete = (question) => {
+  questionToDelete.value = question;
+  showDeleteDialog.value = true;
+};
 
+const cancelDelete = () => {
+  questionToDelete.value = null;
+  showDeleteDialog.value = false;
+};
+
+const deleteQuestion = async () => {
   try {
-    const response = await useApiFrontend(`blocks/${blockId}`, {
-      method: "DELETE",
-    });
+    if (!questionToDelete.value) return;
+
+    const response = await useApiFrontend(
+      `blocks/${questionToDelete.value.id}`,
+      {
+        method: "DELETE",
+      }
+    );
 
     if (response && response.success) {
       await fetchQuestions();
@@ -279,6 +332,8 @@ const deleteQuestion = async (blockId) => {
   } catch (err) {
     console.error("Błąd podczas usuwania pytania:", err);
     errorMessage.value = "Nie udało się usunąć pytania";
+  } finally {
+    cancelDelete();
   }
 };
 
@@ -302,6 +357,24 @@ const saveQuestionsOrder = async () => {
   } catch (err) {
     console.error("Błąd podczas zapisywania kolejności pytań:", err);
     errorMessage.value = "Nie udało się zaktualizować kolejności pytań";
+  }
+};
+// ------ Zarządzanie parami matching (dopasowanie) ----------------------
+
+const addMatchingPair = () => {
+  newQuestion.value.answers.push({
+    left_item: "",
+    right_item: "",
+    is_correct: true,
+  });
+};
+
+const removeMatchingPair = (index) => {
+  if (newQuestion.value.answers.length > 2) {
+    newQuestion.value.answers.splice(index, 1);
+  } else {
+    errorMessage.value =
+      "Pytanie typu dopasowanie musi zawierać co najmniej 2 pary elementów";
   }
 };
 </script>
@@ -423,7 +496,7 @@ const saveQuestionsOrder = async () => {
               </div>
               <h3>Pytanie {{ index + 1 }}</h3>
               <button
-                @click="deleteQuestion(question.id)"
+                @click="confirmDelete(question)"
                 class="delete-btn"
               >
                 Usuń
@@ -465,6 +538,7 @@ const saveQuestionsOrder = async () => {
             <option value="single_choice">Jednokrotny wybór (ABCD)</option>
             <option value="multiple_choice">Wielokrotny wybór (ABCD)</option>
             <option value="text_input">Odpowiedź tekstowa</option>
+            <option value="matching">Dopasowanie</option>
           </select>
         </div>
 
@@ -499,9 +573,72 @@ const saveQuestionsOrder = async () => {
             <template v-else-if="newQuestion.block_type === 'multiple_choice'"
               >(zaznacz wszystkie poprawne):</template
             >
+            <template v-else-if="newQuestion.block_type === 'text_input'"
+              >(podaj poprawną odpowiedź):</template
+            >
+            <template v-else-if="newQuestion.block_type === 'matching'"
+              >(podaj poprawne pary):</template
+            >
             <template v-else>(wybierz odpowiedź):</template>
           </label>
           <div
+            v-if="newQuestion.block_type === 'matching'"
+            class="matching-container"
+          >
+            <label>Elementy do dopasowania:</label>
+            <div class="matching-items-list">
+              <div
+                v-for="(answer, index) in newQuestion.answers"
+                :key="index"
+                class="matching-pair-row"
+              >
+                <div class="matching-pair">
+                  <input
+                    type="text"
+                    v-model="answer.left_item"
+                    class="form-control"
+                    placeholder="Element z lewej strony"
+                  />
+                  <span class="matching-arrow">→</span>
+                  <input
+                    type="text"
+                    v-model="answer.right_item"
+                    class="form-control"
+                    placeholder="Element z prawej strony"
+                  />
+                </div>
+                <button
+                  type="button"
+                  @click="removeMatchingPair(index)"
+                  class="btn-remove-pair"
+                  :disabled="newQuestion.answers.length <= 2"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              @click="addMatchingPair"
+              class="btn-add-pair"
+            >
+              + Dodaj nową parę
+            </button>
+          </div>
+          <div
+            v-else-if="newQuestion.block_type === 'text_input'"
+            class="text-answer-input"
+          >
+            <input
+              type="text"
+              v-model="newQuestion.answers[0].text"
+              class="form-control"
+              placeholder="Wpisz poprawną odpowiedź"
+            />
+          </div>
+
+          <div
+            v-else
             v-for="(answer, index) in newQuestion.answers"
             :key="index"
             class="answer-input-row"
@@ -559,6 +696,34 @@ const saveQuestionsOrder = async () => {
       >
         + Dodaj nowe pytanie
       </button>
+    </div>
+    <div
+      v-if="showDeleteDialog"
+      class="delete-dialog"
+    >
+      <div
+        class="dialog-overlay"
+        @click="cancelDelete"
+      ></div>
+      <div class="dialog-content">
+        <h3>Potwierdź usunięcie</h3>
+        <p>Czy na pewno chcesz usunąć to pytanie?</p>
+        <p class="warning">Ta operacja jest nieodwracalna.</p>
+        <div class="dialog-actions">
+          <button
+            @click="cancelDelete"
+            class="btn-cancel"
+          >
+            Anuluj
+          </button>
+          <button
+            @click="deleteQuestion"
+            class="red-button"
+          >
+            Usuń pytanie
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -866,5 +1031,125 @@ const saveQuestionsOrder = async () => {
   background-image: linear-gradient(to bottom, #999 2px, transparent 2px);
   background-size: 100% 4px;
   background-repeat: repeat-y;
+}
+
+.matching-container {
+  margin-bottom: 20px;
+}
+
+.matching-items-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.matching-pair-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.matching-pair {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  gap: 15px;
+}
+
+.matching-arrow {
+  color: #666;
+  font-size: 1.2rem;
+  margin: 0 5px;
+}
+
+.btn-remove-pair {
+  background: #f8d7da;
+  color: #721c24;
+  border: none;
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-pair:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-add-pair {
+  margin-top: 10px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+}
+
+.dialog-content {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  z-index: 1002;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-content h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.warning {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.dialog-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancel {
+  background-color: #f5f5f5;
+  color: #333;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background-color: #e0e0e0;
 }
 </style>
