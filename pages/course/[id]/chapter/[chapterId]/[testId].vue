@@ -5,6 +5,7 @@ definePageMeta({
 });
 
 import { ref, onMounted, computed, onBeforeUnmount } from "vue";
+import { useTestStore } from "~/stores/testStore";
 
 const route = useRoute();
 const router = useRouter();
@@ -22,7 +23,9 @@ const isSubmitting = ref(false);
 const hasAttempted = ref(false);
 const timeLeft = ref(0);
 const timerInterval = ref(null);
+
 const matchingAnswers = ref({});
+const testStore = useTestStore();
 
 onMounted(async () => {
   await checkPreviousAttempt();
@@ -141,6 +144,15 @@ const submitTest = async () => {
         answers: answers,
       },
     });
+
+    if (response.passed) {
+      testStore.markTestAsPassed(testId, chapterId);
+
+      const parent = getCurrentInstance()?.parent;
+      if (parent && parent.exposed && parent.exposed.updateChapterStatus) {
+        parent.exposed.updateChapterStatus(chapterId, true);
+      }
+    }
 
     if (response) {
       const totalPoints = response.totalPoints || response.totalQuestions || 1;

@@ -21,6 +21,7 @@ const testForm = ref({
   pass_threshold: 70,
   time_limit: 0,
   chapter_id: "",
+  is_course_final: false,
 });
 
 const isLoading = ref(true);
@@ -81,6 +82,7 @@ const fetchTestDetails = async () => {
         pass_threshold: test.pass_threshold || 70,
         time_limit: test.time_limit || 0,
         chapter_id: test.chapter_id || "",
+        is_course_final: test.is_course_final || false,
       };
     }
   } catch (err) {
@@ -143,7 +145,7 @@ const validateForm = () => {
     return false;
   }
 
-  if (!testForm.value.chapter_id) {
+  if (!testForm.value.is_course_final && !testForm.value.chapter_id) {
     errorMessage.value = "Wybierz rozdział dla testu";
     return false;
   }
@@ -397,7 +399,21 @@ const removeMatchingPair = (index) => {
       {{ successMessage }}
     </div>
     <div class="test-form">
-      <div class="form-group">
+      <div
+        class="test-type-info"
+        v-if="testForm.is_course_final"
+      >
+        <span class="test-type-badge">Test kursu</span>
+        <p class="test-type-hint">
+          Ten test dotyczy całego kursu i nie jest przypisany do konkretnego
+          rozdziału.
+        </p>
+      </div>
+
+      <div
+        class="form-group"
+        v-if="!testForm.is_course_final"
+      >
         <label for="chapter">Rozdział:</label>
         <select
           id="chapter"
@@ -958,6 +974,30 @@ const removeMatchingPair = (index) => {
 .question-header h3 {
   margin: 0;
   font-size: 18px;
+}
+
+.test-type-info {
+  background-color: #f8f8f8;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.test-type-badge {
+  display: inline-block;
+  background-color: #eb5757;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.test-type-hint {
+  color: #666;
+  margin: 5px 0 0;
+  font-size: 14px;
 }
 
 .question-item {

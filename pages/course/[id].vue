@@ -1,4 +1,6 @@
 <script setup>
+import { useTestStore } from "~/stores/testStore";
+
 definePageMeta({
   layout: "login",
   middleware: "auth",
@@ -10,8 +12,46 @@ const courseId = route.params.id;
 
 const course = ref(null);
 const chapters = ref([]);
+const courseTests = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
+const chapterTestsStatus = ref({});
+const testStore = useTestStore();
+
+const allChapterTestsPassed = computed(() => {
+  if (Object.keys(chapterTestsStatus.value).length === 0) return false;
+
+  for (const chapterId in chapterTestsStatus.value) {
+    if (!chapterTestsStatus.value[chapterId]) {
+      return false;
+    }
+  }
+  return true;
+});
+
+defineExpose({
+  updateChapterStatus(chapterId, isPassed) {
+    chapterTestsStatus.value[chapterId] = isPassed;
+  },
+});
+
+watch(
+  () => testStore.recentlyPassedTests,
+  async (newTests) => {
+    if (newTests.length > 0) {
+      const recentPasses = [...newTests].sort(
+        (a, b) => b.timestamp - a.timestamp
+      );
+
+      for (const passedTest of recentPasses) {
+        if (passedTest.chapterId) {
+          chapterTestsStatus.value[passedTest.chapterId] = true;
+        }
+      }
+    }
+  },
+  { deep: true }
+);
 
 onMounted(async () => {
   try {
@@ -24,13 +64,62 @@ onMounted(async () => {
       `/courses/${courseId}/chapters`
     );
     chapters.value = chaptersResponse || [];
+
+    const courseTestsResponse = await useApiFrontend(
+      `tests/courses/${courseId}/tests`
+    );
+    if (courseTestsResponse && courseTestsResponse.tests) {
+      courseTests.value = courseTestsResponse.tests;
+    }
+
+    await checkChapterTestsStatus();
   } catch (err) {
-    console.error("Błąd podczas ładowania rozdział kursu:", err);
+    console.error("Błąd podczas ładowania danych kursu:", err);
     error.value = "Błąd pobierania danych kursu";
   } finally {
     isLoading.value = false;
   }
 });
+
+const checkChapterTestsStatus = async () => {
+  try {
+    for (const chapter of chapters.value) {
+      const testsResponse = await useApiFrontend(
+        `chapterTest/${courseId}/chapters/${chapter.id}/tests`
+      );
+
+      if (testsResponse?.tests?.length > 0) {
+        let chapterPassed = false;
+
+        for (const test of testsResponse.tests) {
+          const attemptsResponse = await useApiFrontend(
+            `userTest/${test.id}/attempts`
+          );
+
+          if (attemptsResponse && attemptsResponse.attempts) {
+            const passedAttempt = attemptsResponse.attempts.find(
+              (a) => a.passed
+            );
+            if (passedAttempt) {
+              chapterPassed = true;
+              break;
+            }
+          }
+        }
+
+        chapterTestsStatus.value[chapter.id] = chapterPassed;
+      } else {
+        chapterTestsStatus.value[chapter.id] = true;
+      }
+    }
+  } catch (err) {
+    console.error("Błąd podczas sprawdzania statusu testów:", err);
+  }
+};
+
+const goToTest = (testId) => {
+  router.push(`/course/${courseId}/test/${testId}`);
+};
 
 const goToChapter = (chapterId) => {
   router.push(`/course/${courseId}/chapter/${chapterId}`);
@@ -59,23 +148,62 @@ const goToChapter = (chapterId) => {
         v-else
         class="sidebar-nav"
       >
-        <div
-          v-if="chapters.length === 0"
-          class="empty-chapters"
-        >
-          Brak rozdziałów w kursie.
+        <!-- Sekcja rozdziałów -->
+        <div class="sidebar-section">
+          <h4 class="sidebar-section-title">Rozdziały</h4>
+          <div
+            v-if="chapters.length === 0"
+            class="empty-chapters"
+          >
+            Brak rozdziałów w kursie.
+          </div>
+          <NuxtLink
+            v-for="chapter in chapters"
+            :key="chapter.id"
+            :to="`/course/${courseId}/chapter/${chapter.id}`"
+            class="nav-item"
+            active-class="active"
+          >
+            <span class="nav-text">{{ chapter.title }}</span>
+            <span
+              v-if="chapterTestsStatus[chapter.id]"
+              class="chapter-badge passed"
+              title="Test zaliczony"
+              >✓</span
+            >
+          </NuxtLink>
         </div>
-        <NuxtLink
-          v-for="chapter in chapters"
-          :key="chapter.id"
-          :to="`/course/${courseId}/chapter/${chapter.id}`"
-          class="nav-item"
-          active-class="active"
+
+        <!-- Sekcja testów kursu -->
+        <div
+          v-if="courseTests.length > 0"
+          class="sidebar-section"
         >
-          <span class="nav-text">{{ chapter.title }}</span>
-        </NuxtLink>
+          <h4 class="sidebar-section-title">Test końcowy</h4>
+          <div
+            v-for="test in courseTests"
+            :key="test.id"
+            class="test-nav-item"
+            :class="{ disabled: !allChapterTestsPassed }"
+          >
+            <button
+              @click="allChapterTestsPassed ? goToTest(test.id) : null"
+              :disabled="!allChapterTestsPassed"
+              class="test-button"
+            >
+              {{ test.title }}
+            </button>
+            <div
+              v-if="!allChapterTestsPassed"
+              class="test-locked-info"
+            >
+              Zalicz testy rozdziałowe, aby odblokować test końcowy
+            </div>
+          </div>
+        </div>
       </nav>
     </div>
+
     <div class="content-area">
       <div
         v-if="isLoading"
@@ -99,7 +227,7 @@ const goToChapter = (chapterId) => {
         </div>
         <p
           class="instruction"
-          v-if="!$route.params.chapterId"
+          v-if="!$route.params.chapterId && !$route.params.testId"
         >
           Wybierz rozdział z menu po lewej stronie, by rozpocząć naukę.
         </p>
@@ -238,6 +366,75 @@ const goToChapter = (chapterId) => {
   background-color: #f8f9fa;
   border-left: 4px solid #eb5757;
   border-radius: 4px;
+}
+
+.sidebar-section {
+  margin-bottom: 20px;
+}
+
+.sidebar-section-title {
+  padding: 10px 20px;
+  margin: 0;
+  font-size: 14px;
+  color: #6c757d;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.test-nav-item {
+  padding: 0 20px;
+  margin: 10px 0;
+}
+
+.test-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #eb5757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+}
+
+.test-button:hover:not(:disabled) {
+  background-color: #d63030;
+}
+
+.test-button:disabled {
+  background-color: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.test-locked-info {
+  font-size: 12px;
+  color: #dc3545;
+  margin-top: 5px;
+  padding: 0 5px;
+}
+
+.chapter-badge {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  margin-left: auto;
+}
+
+.chapter-badge.passed {
+  background-color: #28a745;
+  color: white;
+}
+
+.test-nav-item.disabled {
+  opacity: 0.7;
 }
 
 @media (max-width: 768px) {

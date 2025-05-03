@@ -24,3 +24,5 @@ logs
 !.env.example
 
 gitstat_result.json
+
+k6

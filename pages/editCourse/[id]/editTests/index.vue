@@ -19,6 +19,7 @@ const errorMessage = ref("");
 const successMessage = ref("");
 const showDeleteDialog = ref(false);
 const testToDelete = ref(null);
+const finalTestExists = ref(false);
 
 const testForm = ref({
   title: "",
@@ -26,6 +27,7 @@ const testForm = ref({
   pass_threshold: 70,
   time_limit: 0,
   chapter_id: "",
+  is_course_final: false,
 });
 
 // ------ Pobieranie rozdziałów w danym kursie ---------------------
@@ -54,9 +56,27 @@ const fetchTests = async () => {
         const testsWithChapter = response.tests.map((test) => ({
           ...test,
           chapterTitle: chapter.title,
+          isCourseTest: false,
         }));
         allTests.push(...testsWithChapter);
       }
+    }
+
+    const courseTestsResponse = await useApiFrontend(
+      `tests/courses/${courseId}/tests`
+    );
+
+    if (courseTestsResponse?.tests?.length > 0) {
+      const courseTests = courseTestsResponse.tests.map((test) => ({
+        ...test,
+        chapterTitle: "Test dla całego kursu",
+        isCourseTest: true,
+      }));
+      allTests.push(...courseTests);
+
+      finalTestExists.value = courseTestsResponse.tests.some(
+        (test) => test.is_course_final
+      );
     }
 
     tests.value = allTests;
@@ -72,18 +92,33 @@ const createTest = async () => {
   if (!validateForm()) return;
 
   try {
-    const response = await useApiFrontend(
-      `chapterTest/${courseId}/chapters/${testForm.value.chapter_id}/tests`,
-      {
+    let response;
+
+    if (testForm.value.is_course_final) {
+      response = await useApiFrontend(`tests/courses/${courseId}/tests`, {
         method: "POST",
         body: {
           title: testForm.value.title,
           description: testForm.value.description,
           pass_threshold: parseInt(testForm.value.pass_threshold),
           time_limit: parseInt(testForm.value.time_limit),
+          is_course_final: true,
         },
-      }
-    );
+      });
+    } else {
+      response = await useApiFrontend(
+        `chapterTest/${courseId}/chapters/${testForm.value.chapter_id}/tests`,
+        {
+          method: "POST",
+          body: {
+            title: testForm.value.title,
+            description: testForm.value.description,
+            pass_threshold: parseInt(testForm.value.pass_threshold),
+            time_limit: parseInt(testForm.value.time_limit),
+          },
+        }
+      );
+    }
 
     if (response.success) {
       successMessage.value = "Test został pomyślnie utworzony";
@@ -108,7 +143,12 @@ const validateForm = () => {
     return false;
   }
 
-  if (!testForm.value.chapter_id) {
+  if (testForm.value.is_course_final && finalTestExists.value) {
+    errorMessage.value = "Dla tego kursu istnieje już test końcowy";
+    return false;
+  }
+
+  if (!testForm.value.is_course_final && !testForm.value.chapter_id) {
     errorMessage.value = "Wybierz rozdział dla testu";
     return false;
   }
@@ -138,6 +178,7 @@ const resetForm = () => {
     pass_threshold: 70,
     time_limit: 0,
     chapter_id: "",
+    is_course_final: false,
   };
 };
 
@@ -212,8 +253,44 @@ onMounted(async () => {
 
     <div class="test-form">
       <h2>Utwórz nowy test</h2>
-
       <div class="form-group">
+        <div class="test-type-toggle">
+          <label>Typ testu:</label>
+          <div class="toggle-options">
+            <label class="toggle-option">
+              <input
+                type="radio"
+                v-model="testForm.is_course_final"
+                :value="false"
+                name="test-type"
+              />
+              <span>Test dla rozdziału</span>
+            </label>
+            <label
+              class="toggle-option"
+              :class="{ 'disabled-option': finalTestExists }"
+            >
+              <input
+                type="radio"
+                v-model="testForm.is_course_final"
+                :value="true"
+                name="test-type"
+                :disabled="finalTestExists"
+              />
+              <span>Test dla całego kursu</span>
+              <small
+                v-if="finalTestExists"
+                class="option-info"
+                >(Już istnieje)</small
+              >
+            </label>
+          </div>
+        </div>
+      </div>
+      <div
+        class="form-group"
+        v-if="!testForm.is_course_final"
+      >
         <label for="chapter">Rozdział:</label>
         <select
           id="chapter"
@@ -325,9 +402,17 @@ onMounted(async () => {
           <tr
             v-for="test in tests"
             :key="test.id"
+            :class="{ 'course-test-row': test.isCourseTest }"
           >
             <td>{{ test.title }}</td>
-            <td>{{ test.chapterTitle }}</td>
+            <td>
+              <span
+                v-if="test.isCourseTest"
+                class="course-test-badge"
+                >Test kursu</span
+              >
+              <span v-else>{{ test.chapterTitle }}</span>
+            </td>
             <td>{{ test.pass_threshold }}%</td>
             <td>{{ test.time_limit ? `${test.time_limit} min` : "Brak" }}</td>
             <td>{{ test._count?.test_blocks || 0 }}</td>
@@ -497,6 +582,40 @@ onMounted(async () => {
 .btn-cancel:hover {
   background-color: #e5e5e5;
 }
+.test-type-toggle {
+  margin-bottom: 16px;
+}
+
+.toggle-options {
+  display: flex;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.toggle-option input {
+  cursor: pointer;
+}
+
+.course-test-row {
+  background-color: rgba(63, 81, 181, 0.05);
+}
+
+.course-test-badge {
+  background-color: #3f51b5;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
 
 .tests-table-container {
   background-color: white;
@@ -606,5 +725,19 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+.disabled-option {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.disabled-option input {
+  cursor: not-allowed;
+}
+
+.option-info {
+  margin-left: 5px;
+  color: #ff5252;
+  font-size: 12px;
 }
 </style>
