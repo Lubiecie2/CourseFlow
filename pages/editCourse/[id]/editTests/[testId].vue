@@ -520,19 +520,49 @@ const removeMatchingPair = (index) => {
             </div>
             <p class="question-content">{{ question.question_text }}</p>
             <div class="answers-container">
-              <div
-                v-for="(answer, i) in question.answers"
-                :key="i"
-                class="answer-row"
-                :class="{ correct: answer.is_correct }"
-              >
-                <span class="answer-letter">{{ ["A", "B", "C", "D"][i] }}</span>
-                <span>{{ answer.text }}</span>
-                <span
-                  v-if="answer.is_correct"
-                  class="correct-mark"
-                  >(poprawna)</span
+              <div v-if="question.block_type === 'matching'">
+                <div
+                  v-for="(answer, i) in question.answers"
+                  :key="i"
+                  class="matching-display-row"
                 >
+                  <div class="matching-display-pair">
+                    <span class="matching-item">{{ answer.text }}</span>
+                    <span class="matching-arrow">→</span>
+                    <span class="matching-item">{{
+                      answer.attributes?.right_item || ""
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-else-if="question.block_type === 'text_input'"
+                class="text-answer-display"
+              >
+                <span class="text-answer-label">Poprawna odpowiedź:</span>
+                <span class="correct-mark">{{
+                  question.answers[0]?.text
+                }}</span>
+              </div>
+
+              <div v-else>
+                <div
+                  v-for="(answer, i) in question.answers"
+                  :key="i"
+                  class="answer-row"
+                  :class="{ correct: answer.is_correct }"
+                >
+                  <span class="answer-letter">{{
+                    ["A", "B", "C", "D"][i]
+                  }}</span>
+                  <span>{{ answer.text }}</span>
+                  <span
+                    v-if="answer.is_correct"
+                    class="correct-mark"
+                    >(poprawna)</span
+                  >
+                </div>
               </div>
             </div>
           </div>

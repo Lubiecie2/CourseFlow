@@ -89,6 +89,11 @@ const loadTest = async () => {
               textInputAnswers.value[question.id] = "";
             } else if (question.block_type === "matching") {
               matchingAnswers.value[question.id] = {};
+              if (question.answers && question.answers.leftItems) {
+                question.answers.leftItems.forEach((item) => {
+                  matchingAnswers.value[question.id][item.id] = "";
+                });
+              }
             } else {
               userAnswers.value[question.id] = null;
             }
@@ -222,7 +227,8 @@ const isFormValid = computed(() => {
     } else if (q.block_type === "matching") {
       const matches = matchingAnswers.value[q.id] || {};
       return (
-        Object.keys(matches).length === q.answers.length &&
+        q.answers.leftItems &&
+        Object.keys(matches).length === q.answers.leftItems.length &&
         Object.values(matches).every(
           (item) => item !== undefined && item !== ""
         )
@@ -400,40 +406,46 @@ const updateMatching = (questionId, leftId, rightItem) => {
           <div class="matching-items">
             <div class="matching-left-column">
               <div
-                v-for="answer in question.answers"
-                :key="answer.id"
+                v-for="leftItem in question.answers.leftItems"
+                :key="leftItem.id"
                 class="matching-left-item"
               >
-                <span class="matching-item-text">{{ answer.left_item }}</span>
+                <span class="matching-item-text">{{ leftItem.left_item }}</span>
                 <span class="matching-arrow">→</span>
               </div>
             </div>
 
             <div class="matching-right-column">
               <div
-                v-for="answer in question.answers"
-                :key="answer.id"
+                v-for="leftItem in question.answers.leftItems"
+                :key="leftItem.id"
                 class="matching-right-item"
               >
                 <select
-                  v-model="matchingAnswers[question.id][answer.id]"
+                  v-model="matchingAnswers[question.id][leftItem.id]"
                   class="matching-select"
                   :disabled="hasAttempted"
+                  @change="
+                    updateMatching(
+                      question.id,
+                      leftItem.id,
+                      $event.target.value
+                    )
+                  "
                 >
                   <option value="">Wybierz...</option>
                   <option
-                    v-for="rightOption in question.answers"
-                    :key="rightOption.id"
-                    :value="rightOption.right_item"
+                    v-for="(rightItem, index) in question.answers.rightItems"
+                    :key="index"
+                    :value="rightItem"
                     :disabled="
                       Object.values(
                         matchingAnswers[question.id] || {}
-                      ).includes(rightOption.right_item) &&
-                      matchingAnswers[question.id][answer.id] !==
-                        rightOption.right_item
+                      ).includes(rightItem) &&
+                      matchingAnswers[question.id][leftItem.id] !== rightItem
                     "
                   >
-                    {{ rightOption.right_item }}
+                    {{ rightItem }}
                   </option>
                 </select>
               </div>
@@ -507,6 +519,7 @@ const updateMatching = (questionId, leftId, rightItem) => {
             Wróć do rozdziału
           </button>
           <button
+            v-if="!testResults.passed"
             @click="resetTest"
             class="retry-button"
           >
