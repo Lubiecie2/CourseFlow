@@ -16,12 +16,12 @@ const showDeleteDialog = ref(false);
 const editingUserId = ref(null);
 const userToDelete = ref(null);
 const searchQuery = ref("");
-const activeSection = ref("users");
 const currentPage = ref(1);
 const totalPages = ref(1);
 const logsPerPage = 15;
 
 // ------ Logi operacji użytkowników -----------------------------
+
 const logs = ref([]);
 const logsLoading = ref(true);
 const logsError = ref(null);
@@ -146,14 +146,6 @@ const deleteUser = async () => {
   }
 };
 
-// ------ Nawigacja do sekcji ról -----------------------------
-
-const goToRoles = () => {
-  navigateTo("/role");
-};
-
-// ------ Funkcja pobierania logów ----------------------------
-
 const fetchLogs = async () => {
   try {
     logsLoading.value = true;
@@ -203,6 +195,7 @@ const formatDate = (dateString) => {
 };
 
 // ------ Inicjalizacja logów -------------------------------------
+
 onMounted(fetchLogs);
 
 // ------ Odświeżanie logów ---------------------------------------
@@ -214,40 +207,31 @@ watch(logsRefreshCounter, () => {
 
 <template>
   <AdminNavbar />
-
   <div class="course-management">
-    <div class="mobile-nav">
-      <div class="mobile-nav-title">Panel administracyjny</div>
-      <div class="mobile-nav-buttons">
-        <button
-          class="mobile-nav-btn active"
-          @click="activeSection = 'users'"
-        >
-          Użytkownicy
-        </button>
-        <button
-          class="mobile-nav-btn"
-          @click="goToRoles"
-        >
-          Role
-        </button>
-      </div>
-    </div>
     <div class="sidebar">
-      <h3 class="sidebar-title">Panel administracyjny</h3>
+      <h3 class="sidebar-title">Zarządzanie użytkownikami</h3>
       <nav class="sidebar-nav">
-        <div
-          class="nav-item active"
-          @click="activeSection = 'users'"
+        <NuxtLink
+          to="/users"
+          class="nav-item"
+          active-class="active"
         >
           <span class="nav-text">Użytkownicy</span>
-        </div>
-        <div
+        </NuxtLink>
+        <NuxtLink
+          to="/role"
           class="nav-item"
-          @click="goToRoles"
+          active-class="active"
         >
           <span class="nav-text">Role i uprawnienia</span>
-        </div>
+        </NuxtLink>
+        <NuxtLink
+          to="/users/notifications"
+          class="nav-item"
+          active-class="active"
+        >
+          <span class="nav-text">Powiadomienia</span>
+        </NuxtLink>
       </nav>
     </div>
     <div class="content-area">
@@ -378,7 +362,6 @@ watch(logsRefreshCounter, () => {
           <h3>Brak użytkowników</h3>
           <p>Nie znaleziono żadnych użytkowników.</p>
         </div>
-        <!-- Sekcja logów operacji -->
         <div class="logs-section">
           <h2>Historia operacji</h2>
           <p class="section-description">Zmiany ról i usuwanie użytkowników</p>
@@ -594,6 +577,16 @@ watch(logsRefreshCounter, () => {
 .nav-item.active {
   background-color: #f8f9fa;
   color: #eb5757;
+}
+
+.nav-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e9ecef;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .content-area {
@@ -838,7 +831,6 @@ watch(logsRefreshCounter, () => {
   animation: spin 1s linear infinite;
   margin-bottom: 10px;
 }
-/* Sekcja logów */
 .logs-section {
   margin-top: 30px;
   margin-bottom: 30px;

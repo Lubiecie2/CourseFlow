@@ -71,6 +71,7 @@ const { logout } = userStore;
         >
           Strona główna
         </button>
+        <NotificationBadge v-if="isLogged" />
       </div>
 
       <div
@@ -230,6 +231,45 @@ const { logout } = userStore;
   width: 90%;
   background-color: rgba(235, 87, 87, 0.75);
   font-size: 15px;
+}
+
+:deep(.notification-container) {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+:deep(.notification-badge) {
+  background-color: rgba(235, 87, 87, 0.85);
+  border-radius: 10px;
+  margin-right: 20px;
+  padding: 10px 15px;
+  height: auto;
+  width: auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+:deep(.notification-badge:hover) {
+  background-color: rgba(235, 87, 87, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.notification-badge:active) {
+  transform: translateY(0);
+  background-color: rgba(194, 72, 72, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.bell-icon) {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+}
+
+:deep(.notification-count) {
+  top: -8px;
+  right: -8px;
 }
 
 .mobile-menu {
