@@ -1,5 +1,5 @@
 <script setup>
-// ------ Metadane strony i uorawnienia  --------------------
+// ------ Metadane strony i uprawnienia --------------------
 
 definePageMeta({
   middleware: ["auth", "admin-auth"],
@@ -13,25 +13,39 @@ const usersData = ref(null);
 const error = ref(null);
 const loading = ref(true);
 const showDeleteDialog = ref(false);
-let editingUserId = null;
-let userToDelete = null;
+const editingUserId = ref(null);
+const userToDelete = ref(null);
 const searchQuery = ref("");
-const activeSection = ref("users");
+const currentPage = ref(1);
+const totalPages = ref(1);
+const logsPerPage = 15;
+
+// ------ Logi operacji użytkowników -----------------------------
+
+const logs = ref([]);
+const logsLoading = ref(true);
+const logsError = ref(null);
+const logsRefreshCounter = ref(0);
 
 // ------ Pobieranie użytkowników ---------------------------
 
-try {
-  const { data, error: apiError } = await useApiServer("admin/users");
-  if (apiError.value) {
-    throw apiError.value;
+const fetchUsers = async () => {
+  try {
+    loading.value = true;
+    const { data, error: apiError } = await useApiServer("admin/users");
+    if (apiError.value) {
+      throw apiError.value;
+    }
+    usersData.value = data.value;
+  } catch (err) {
+    console.error("Błąd ładowania użytkowników:", err);
+    error.value = err;
+  } finally {
+    loading.value = false;
   }
-  usersData.value = data.value;
-} catch (err) {
-  console.error("Błąd ładowania użytkowników:", err);
-  error.value = err;
-} finally {
-  loading.value = false;
-}
+};
+
+await fetchUsers();
 
 const users = computed(() => usersData.value?.users ?? []);
 const roles = computed(() => usersData.value?.roles ?? []);
@@ -46,8 +60,8 @@ const filteredUsers = computed(() => {
 // ------ Edycja ról użytkownika -----------------------------
 
 const startEdit = (user) => {
-  if (editingUserId !== null && editingUserId !== user.id) {
-    const previousUser = users.value.find((u) => u.id === editingUserId);
+  if (editingUserId.value !== null && editingUserId.value !== user.id) {
+    const previousUser = users.value.find((u) => u.id === editingUserId.value);
     if (previousUser) {
       previousUser.editingRole = false;
       previousUser.newRole = previousUser.role;
@@ -56,21 +70,29 @@ const startEdit = (user) => {
 
   user.editingRole = true;
   user.newRole = user.role;
-  editingUserId = user.id;
+  editingUserId.value = user.id;
 };
 
 const saveRoleChange = async (user) => {
-  if (user.role !== user.newRole) {
-    await changeUserRole(user.id, user.newRole);
+  try {
+    if (user.role !== user.newRole) {
+      await changeUserRole(user.id, user.newRole);
+
+      logsRefreshCounter.value++;
+
+      currentPage.value = 1;
+    }
+    user.editingRole = false;
+    editingUserId.value = null;
+  } catch (err) {
+    console.error("Błąd podczas zapisywania roli:", err);
   }
-  user.editingRole = false;
-  editingUserId = null;
 };
 
 const cancelEdit = (user) => {
   user.editingRole = false;
   user.newRole = user.role;
-  editingUserId = null;
+  editingUserId.value = null;
 };
 
 const changeUserRole = async (userId, newRole) => {
@@ -86,31 +108,37 @@ const changeUserRole = async (userId, newRole) => {
     }
   } catch (err) {
     console.error("Błąd zmiany roli:", err);
+    throw err;
   }
 };
 
 // ------ Usuwanie użytkownika -----------------------------
 
 const confirmDelete = (user) => {
-  userToDelete = user;
+  userToDelete.value = user;
   showDeleteDialog.value = true;
 };
 
 const cancelDelete = () => {
-  userToDelete = null;
+  userToDelete.value = null;
   showDeleteDialog.value = false;
 };
 
 const deleteUser = async () => {
-  if (userToDelete) {
+  if (userToDelete.value) {
     try {
-      await useApiFrontend(`admin/users/${userToDelete.id}`, {
+      await useApiFrontend(`admin/users/${userToDelete.value.id}`, {
         method: "DELETE",
       });
+
       usersData.value.users = usersData.value.users.filter(
-        (user) => user.id !== userToDelete.id
+        (user) => user.id !== userToDelete.value.id
       );
-      userToDelete = null;
+
+      logsRefreshCounter.value++;
+      currentPage.value = 1;
+
+      userToDelete.value = null;
       showDeleteDialog.value = false;
     } catch (err) {
       console.error("Błąd usuwania użytkownika:", err);
@@ -118,49 +146,92 @@ const deleteUser = async () => {
   }
 };
 
-// ------ Nawigacja do sekcji ról -----------------------------
+const fetchLogs = async () => {
+  try {
+    logsLoading.value = true;
+    logsError.value = null;
 
-const goToRoles = () => {
-  navigateTo("/users/role");
+    const response = await useApiFrontend(
+      `logs?page=${currentPage.value}&limit=${logsPerPage}`
+    );
+
+    if (response && response.success) {
+      logs.value = response.logs || [];
+
+      if (response.pagination) {
+        totalPages.value = response.pagination.totalPages || 1;
+      }
+    } else {
+      throw new Error("Nie udało się pobrać logów operacji");
+    }
+  } catch (err) {
+    console.error("Błąd podczas pobierania logów:", err);
+    logsError.value = "Wystąpił błąd podczas pobierania logów operacji.";
+  } finally {
+    logsLoading.value = false;
+  }
 };
+
+// ------ Paginacja logów -------------------------------------
+
+const changePage = (newPage) => {
+  if (newPage < 1 || newPage > totalPages.value) return;
+  currentPage.value = newPage;
+  fetchLogs();
+};
+
+// ------ Formatowanie daty ------------------------------------
+
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("pl-PL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
+// ------ Inicjalizacja logów -------------------------------------
+
+onMounted(fetchLogs);
+
+// ------ Odświeżanie logów ---------------------------------------
+
+watch(logsRefreshCounter, () => {
+  setTimeout(fetchLogs, 500);
+});
 </script>
 
 <template>
   <AdminNavbar />
-
   <div class="course-management">
-    <div class="mobile-nav">
-      <div class="mobile-nav-title">Panel administracyjny</div>
-      <div class="mobile-nav-buttons">
-        <button
-          class="mobile-nav-btn active"
-          @click="activeSection = 'users'"
-        >
-          Użytkownicy
-        </button>
-        <button
-          class="mobile-nav-btn"
-          @click="goToRoles"
-        >
-          Role
-        </button>
-      </div>
-    </div>
     <div class="sidebar">
-      <h3 class="sidebar-title">Panel administracyjny</h3>
+      <h3 class="sidebar-title">Zarządzanie użytkownikami</h3>
       <nav class="sidebar-nav">
-        <div
-          class="nav-item active"
-          @click="activeSection = 'users'"
+        <NuxtLink
+          to="/users"
+          class="nav-item"
+          active-class="active"
         >
           <span class="nav-text">Użytkownicy</span>
-        </div>
-        <div
+        </NuxtLink>
+        <NuxtLink
+          to="/role"
           class="nav-item"
-          @click="goToRoles"
+          active-class="active"
         >
           <span class="nav-text">Role i uprawnienia</span>
-        </div>
+        </NuxtLink>
+        <NuxtLink
+          to="/users/notifications"
+          class="nav-item"
+          active-class="active"
+        >
+          <span class="nav-text">Powiadomienia</span>
+        </NuxtLink>
       </nav>
     </div>
     <div class="content-area">
@@ -291,6 +362,117 @@ const goToRoles = () => {
           <h3>Brak użytkowników</h3>
           <p>Nie znaleziono żadnych użytkowników.</p>
         </div>
+        <div class="logs-section">
+          <h2>Historia operacji</h2>
+          <p class="section-description">Zmiany ról i usuwanie użytkowników</p>
+
+          <div
+            v-if="logsLoading"
+            class="logs-loading"
+          >
+            <div class="spinner"></div>
+            <p>Ładowanie logów...</p>
+          </div>
+
+          <div
+            v-else-if="logsError"
+            class="logs-error"
+          >
+            <p>{{ logsError }}</p>
+            <button
+              @click="fetchLogs"
+              class="btn-retry"
+            >
+              Spróbuj ponownie
+            </button>
+          </div>
+
+          <div
+            v-else-if="logs.length === 0"
+            class="logs-empty"
+          >
+            <div class="empty-icon">📝</div>
+            <p>Brak logów operacji</p>
+          </div>
+
+          <div
+            v-else
+            class="logs-table-wrapper"
+          >
+            <table class="logs-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Operacja</th>
+                  <th>Użytkownik</th>
+                  <th>Administrator</th>
+                  <th>Szczegóły</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="log in logs"
+                  :key="log.id"
+                >
+                  <td>{{ formatDate(log.created_at) }}</td>
+                  <td>
+                    <span
+                      :class="[
+                        'log-type',
+                        log.action_type === 'ROLE_CHANGED'
+                          ? 'log-role'
+                          : 'log-delete',
+                      ]"
+                    >
+                      {{
+                        log.action_type === "ROLE_CHANGED"
+                          ? "Zmiana roli"
+                          : "Usunięcie użytkownika"
+                      }}
+                    </span>
+                  </td>
+                  <td>
+                    <span v-if="log.user_email">{{ log.user_email }}</span>
+                    <span v-else-if="log.action_type === 'USER_DELETED'">{{
+                      log.old_value
+                    }}</span>
+                    <span v-else>Brak danych</span>
+                  </td>
+                  <td>{{ log.changed_by_email || "System" }}</td>
+                  <td>
+                    <span v-if="log.action_type === 'ROLE_CHANGED'">
+                      Zmiana roli: {{ log.old_value }} → {{ log.new_value }}
+                    </span>
+                    <span v-else-if="log.action_type === 'USER_DELETED'">
+                      Usunięcie użytkownika: {{ log.old_value }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pagination-controls">
+              <button
+                @click="changePage(currentPage - 1)"
+                :disabled="currentPage === 1"
+                class="pagination-btn"
+              >
+                &laquo; Poprzednia
+              </button>
+
+              <span class="pagination-info">
+                Strona {{ currentPage }} z {{ totalPages }}
+              </span>
+
+              <button
+                @click="changePage(currentPage + 1)"
+                :disabled="currentPage >= totalPages"
+                class="pagination-btn"
+              >
+                Następna &raquo;
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -396,9 +578,18 @@ const goToRoles = () => {
 }
 
 .nav-item.active {
-  background-color: #eff6ff;
-  border-left: 3px solid #eb5757;
-  font-weight: 500;
+  background-color: #f8f9fa;
+  color: #eb5757;
+}
+
+.nav-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e9ecef;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .content-area {
@@ -642,6 +833,148 @@ const goToRoles = () => {
   border-top-color: #eb5757;
   animation: spin 1s linear infinite;
   margin-bottom: 10px;
+}
+.logs-section {
+  margin-top: 30px;
+  margin-bottom: 30px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+}
+
+.logs-section h2 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 5px;
+  color: #1d1d1f;
+}
+
+.section-description {
+  color: #6e6e73;
+  margin-bottom: 15px;
+}
+
+.logs-table-wrapper {
+  overflow-x: auto;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.logs-table th {
+  background-color: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 14px;
+}
+
+.logs-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 14px;
+}
+
+.logs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.logs-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.log-type {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.log-role {
+  background-color: #e3f2fd;
+  color: #0d6efd;
+}
+
+.log-delete {
+  background-color: #f8d7da;
+  color: #dc3545;
+}
+
+.logs-loading,
+.logs-error,
+.logs-empty {
+  padding: 20px;
+  text-align: center;
+}
+
+.logs-empty .empty-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+  color: #adb5bd;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  background-color: #eb5757;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #d64545;
+}
+
+.pagination-btn:disabled {
+  background-color: #ced4da;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .pagination-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .logs-section {
+    margin-top: 20px;
+    padding: 15px;
+  }
+
+  .logs-table {
+    font-size: 12px;
+  }
+
+  .logs-table th,
+  .logs-table td {
+    padding: 8px;
+  }
 }
 
 @keyframes spin {
