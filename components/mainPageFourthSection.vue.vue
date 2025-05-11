@@ -3,8 +3,8 @@ import { ref, onMounted } from "vue";
 
 const router = useRouter();
 
-const goToCourses = () => {
-  router.push("/courses");
+const goToRegister = () => {
+  router.push("/register");
 };
 
 const leftTextRef = ref<HTMLElement | null>(null);
@@ -51,7 +51,7 @@ onMounted(() => {
           </p>
           <button
             class="cta-button"
-            @click="goToCourses"
+            @click="goToRegister"
           >
             Zapisz się teraz
           </button>

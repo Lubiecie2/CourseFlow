@@ -616,23 +616,26 @@ watch(logsRefreshCounter, () => {
 }
 
 .sidebar-title {
-  padding: 15px;
-  margin: 0;
+  padding: 20px;
+  font-size: 18px;
   font-weight: 600;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .sidebar-nav {
-  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  padding: 15px 0;
 }
 
 .nav-item {
-  padding: 12px 15px;
+  padding: 12px 20px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.3s;
 }
 
 .nav-item:hover {
-  background-color: #f1f3f5;
+  background-color: #f8f9fa;
 }
 
 .nav-item.active {

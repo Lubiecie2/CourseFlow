@@ -7,11 +7,17 @@ definePageMeta({
 import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 import { useTestStore } from "~/stores/testStore";
 
+// ------ Inicjalizacja routera i parametrów trasy -------------------------
+
 const route = useRoute();
 const router = useRouter();
 const courseId = route.params.id;
 const chapterId = route.params.chapterId;
 const testId = route.params.testId;
+const testStore = useTestStore();
+
+// ------ Zmienne ----------------------------------------------------------
+
 const isLoading = ref(true);
 const error = ref(null);
 const currentTest = ref(null);
@@ -23,14 +29,50 @@ const isSubmitting = ref(false);
 const hasAttempted = ref(false);
 const timeLeft = ref(0);
 const timerInterval = ref(null);
-
 const matchingAnswers = ref({});
-const testStore = useTestStore();
+
+// ------ Walidacja formularza ---------------------------------------------
+
+const isFormValid = computed(() => {
+  if (!currentTest.value?.questions) return false;
+  return currentTest.value.questions.every((q) => {
+    if (q.block_type === "multiple_choice") {
+      return (
+        Array.isArray(userAnswers.value[q.id]) &&
+        userAnswers.value[q.id].length > 0
+      );
+    } else if (q.block_type === "text_input") {
+      return textInputAnswers.value[q.id]?.trim() !== "";
+    } else if (q.block_type === "matching") {
+      const matches = matchingAnswers.value[q.id] || {};
+      return (
+        q.answers.leftItems &&
+        Object.keys(matches).length === q.answers.leftItems.length &&
+        Object.values(matches).every(
+          (item) => item !== undefined && item !== ""
+        )
+      );
+    }
+    return userAnswers.value[q.id] != null;
+  });
+});
+
+// ------ Ładowanie danych po odpaleniu strony -----------------------------
 
 onMounted(async () => {
   await checkPreviousAttempt();
   await loadTest();
 });
+
+// ------ Czyszczenie Timera po opuszczeniu strony -------------------------
+
+onBeforeUnmount(() => {
+  if (timerInterval.value) {
+    clearInterval(timerInterval.value);
+  }
+});
+
+// ------ Sprawdzanie czy użytkownik rozwiązał test ------------------------
 
 const checkPreviousAttempt = async () => {
   try {
@@ -64,6 +106,8 @@ const checkPreviousAttempt = async () => {
     console.error("Błąd podczas sprawdzania historii testu:", err);
   }
 };
+
+// ------ Ładowanie testu i pytań ----------------------------------------
 
 const loadTest = async () => {
   try {
@@ -110,6 +154,8 @@ const loadTest = async () => {
   }
 };
 
+// ------ Zaznaczanie odpowiedzi przez użytkownika ----------------------
+
 const selectAnswer = (question, answerId) => {
   if (hasAttempted.value) return;
   if (question.block_type === "multiple_choice") {
@@ -127,10 +173,61 @@ const selectAnswer = (question, answerId) => {
   }
 };
 
+// ------ Obsługa inputów tekstowych ------------------------------------
+
 const handleTextInputChange = (questionId, value) => {
   if (hasAttempted.value) return;
   textInputAnswers.value[questionId] = value;
 };
+
+// ------ Obsługa pytań matching ---------------------------------------
+
+const updateMatching = (questionId, leftId, rightItem) => {
+  if (hasAttempted.value) return;
+  if (!matchingAnswers.value[questionId]) {
+    matchingAnswers.value[questionId] = {};
+  }
+  matchingAnswers.value[questionId][leftId] = rightItem;
+};
+
+// ------ Sprawdzanie czy odpowiedz została zaznaczona --------------------
+
+const isAnswerSelected = (question, answerId) => {
+  if (question.block_type === "multiple_choice") {
+    return (
+      Array.isArray(userAnswers.value[question.id]) &&
+      userAnswers.value[question.id].includes(answerId)
+    );
+  }
+  return userAnswers.value[question.id] === answerId;
+};
+
+// ------ Uruchamianie licznika czasu -------------------------------------
+
+const startTimer = () => {
+  if (hasAttempted.value || !currentTest.value?.time_limit) return;
+  timeLeft.value = currentTest.value.time_limit * 60;
+  timerInterval.value = setInterval(() => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
+    } else {
+      clearInterval(timerInterval.value);
+      if (!hasAttempted.value) {
+        handleTimeUp();
+      }
+    }
+  }, 1000);
+};
+
+// ------ Formatowanie czasu -----------------------------------------------
+
+const formattedTimeLeft = computed(() => {
+  const minutes = Math.floor(timeLeft.value / 60);
+  const seconds = timeLeft.value % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+});
+
+// ------ Wysyłanie odpowiedzi i wyświetlanie wyników ----------------------
 
 const submitTest = async () => {
   try {
@@ -185,6 +282,8 @@ const submitTest = async () => {
   }
 };
 
+// ------ Resetowanie testu ---------------------------------------------
+
 const resetTest = () => {
   showResults.value = false;
   hasAttempted.value = false;
@@ -210,81 +309,16 @@ const resetTest = () => {
   }
 };
 
+// ------ Powrót do strony kursu ----------------------------------------
+
 const backToChapter = () => {
   router.push(`/course/${courseId}/chapter/${chapterId}`);
 };
 
-const isFormValid = computed(() => {
-  if (!currentTest.value?.questions) return false;
-  return currentTest.value.questions.every((q) => {
-    if (q.block_type === "multiple_choice") {
-      return (
-        Array.isArray(userAnswers.value[q.id]) &&
-        userAnswers.value[q.id].length > 0
-      );
-    } else if (q.block_type === "text_input") {
-      return textInputAnswers.value[q.id]?.trim() !== "";
-    } else if (q.block_type === "matching") {
-      const matches = matchingAnswers.value[q.id] || {};
-      return (
-        q.answers.leftItems &&
-        Object.keys(matches).length === q.answers.leftItems.length &&
-        Object.values(matches).every(
-          (item) => item !== undefined && item !== ""
-        )
-      );
-    }
-    return userAnswers.value[q.id] != null;
-  });
-});
-
-const isAnswerSelected = (question, answerId) => {
-  if (question.block_type === "multiple_choice") {
-    return (
-      Array.isArray(userAnswers.value[question.id]) &&
-      userAnswers.value[question.id].includes(answerId)
-    );
-  }
-  return userAnswers.value[question.id] === answerId;
-};
-
-const formattedTimeLeft = computed(() => {
-  const minutes = Math.floor(timeLeft.value / 60);
-  const seconds = timeLeft.value % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-});
-
-const startTimer = () => {
-  if (hasAttempted.value || !currentTest.value?.time_limit) return;
-  timeLeft.value = currentTest.value.time_limit * 60;
-  timerInterval.value = setInterval(() => {
-    if (timeLeft.value > 0) {
-      timeLeft.value--;
-    } else {
-      clearInterval(timerInterval.value);
-      if (!hasAttempted.value) {
-        handleTimeUp();
-      }
-    }
-  }, 1000);
-};
+// ------ Wysłanie kursu po czasie ----------------------------------------
 
 const handleTimeUp = async () => {
   await submitTest();
-};
-
-onBeforeUnmount(() => {
-  if (timerInterval.value) {
-    clearInterval(timerInterval.value);
-  }
-});
-
-const updateMatching = (questionId, leftId, rightItem) => {
-  if (hasAttempted.value) return;
-  if (!matchingAnswers.value[questionId]) {
-    matchingAnswers.value[questionId] = {};
-  }
-  matchingAnswers.value[questionId][leftId] = rightItem;
 };
 </script>
 
@@ -380,6 +414,32 @@ const updateMatching = (questionId, leftId, rightItem) => {
               <span class="answer-letter"
                 >{{ ["A", "B", "C", "D"][answer.sort_order - 1] }}.</span
               >
+              <span class="answer-text">{{ answer.text }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="question.block_type === 'true_false'"
+          class="true-false-container"
+        >
+          <div
+            v-for="answer in question.answers"
+            :key="answer.id"
+            class="true-false-option"
+            :class="{
+              selected: isAnswerSelected(question, answer.id),
+              disabled: hasAttempted,
+            }"
+            @click="selectAnswer(question, answer.id)"
+          >
+            <div
+              class="answer-checkbox"
+              :class="{ checked: isAnswerSelected(question, answer.id) }"
+            >
+              <div class="checkbox-inner"></div>
+            </div>
+            <div class="answer-content">
               <span class="answer-text">{{ answer.text }}</span>
             </div>
           </div>

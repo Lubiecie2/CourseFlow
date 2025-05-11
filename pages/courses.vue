@@ -3,7 +3,6 @@ import { ref, onMounted, computed } from "vue";
 
 definePageMeta({
   layout: "login",
-  middleware: "auth",
 });
 
 const courses = ref([]);
