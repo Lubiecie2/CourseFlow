@@ -113,12 +113,13 @@ const onSubmit = async () => {
             >
               {{ errorMessage }}
             </p>
-            <!-- <button
+            <button
               class="remember-button"
-              type="submit"
+              type="button"
+              @click="router.push('/resetPassword')"
             >
               Nie pamiętam hasła
-            </button> -->
+            </button>
             <div class="submit-button-container">
               <button
                 class="submit-button"
@@ -248,6 +249,7 @@ input {
   color: black;
   display: block;
   margin-left: auto;
+  text-decoration: underline;
 }
 
 .submit-button {

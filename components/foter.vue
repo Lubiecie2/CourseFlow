@@ -13,19 +13,14 @@
 
         <div class="footer-link">
           <nuxt-link
-            to="#"
+            to="/aboutus"
             class="footer-link-item"
             >O nas</nuxt-link
           >
           <nuxt-link
-            to="#"
+            to="/contact"
             class="footer-link-item"
             >Kontakt</nuxt-link
-          >
-          <nuxt-link
-            to="#"
-            class="footer-link-item"
-            >Opinie</nuxt-link
           >
         </div>
 

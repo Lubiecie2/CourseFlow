@@ -11,6 +11,8 @@ const errorMessage = ref("");
 const successMessage = ref("");
 const router = useRouter();
 const route = useRoute();
+const isResending = ref(false);
+const resendMessage = ref("");
 
 onMounted(() => {
   if (route.query.email) {
@@ -23,35 +25,79 @@ onMounted(() => {
 const submitCode = async () => {
   errorMessage.value = "";
   successMessage.value = "";
+
+  const cleanCode = verificationCode.value.trim();
+  if (!cleanCode || cleanCode.length !== 8) {
+    errorMessage.value = "Kod weryfikacyjny musi zawierać 8 znaków";
+    return;
+  }
+
   try {
     const response = await useApiFrontend("/auth/verify-registration", {
       method: "POST",
-      body: { email: email.value, code: verificationCode.value },
+      body: {
+        email: email.value.trim(),
+        code: cleanCode,
+      },
     });
-    if (response.message) {
+
+    if (response && response.message) {
       successMessage.value = response.message;
       setTimeout(() => {
         router.push("/login");
       }, 2000);
+    } else if (response && response.error) {
+      errorMessage.value = response.error;
     } else {
       errorMessage.value = "Niepoprawny kod weryfikacyjny.";
     }
-  } catch (error) {
-    errorMessage.value = "Wystąpił błąd. Spróbuj ponownie później.";
+  } catch (error: any) {
+    console.error("Błąd weryfikacji:", error);
+
+    if (error.response?.data?.error) {
+      errorMessage.value = error.response.data.error;
+    } else {
+      errorMessage.value = "Wystąpił błąd. Spróbuj ponownie później.";
+    }
   }
 };
 
 // --------- PONOWNE WYSŁANIE KODU ---------
 
 const resendCode = async () => {
+  if (isResending.value) return;
+
   try {
-    await useApiFrontend("/auth/resend-code", {
+    isResending.value = true;
+    resendMessage.value = "";
+    errorMessage.value = "";
+
+    const response = await useApiFrontend("/auth/resend-code", {
       method: "POST",
       body: { email: email.value },
     });
-    console.log("Weryfikacja się powiodła!");
-  } catch (error) {
-    console.error("Wystąpił błąd. Spróbuj ponownie później.");
+
+    resendMessage.value =
+      "Kod weryfikacyjny został ponownie wysłany na Twój adres email.";
+    setTimeout(() => {
+      resendMessage.value = "";
+    }, 5000);
+  } catch (error: any) {
+    if (
+      error.response &&
+      error.response.data &&
+      error.response.data.error &&
+      error.response.data.error.includes("Proszę poczekać")
+    ) {
+      resendMessage.value =
+        "Proszę poczekać 2 minuty przed ponownym wysłaniem kodu.";
+    } else {
+      resendMessage.value =
+        "Wystąpił błąd podczas wysyłania kodu. Spróbuj ponownie później.";
+    }
+    console.error("Błąd ponownego wysłania kodu:", error);
+  } finally {
+    isResending.value = false;
   }
 };
 </script>
@@ -70,9 +116,10 @@ const resendCode = async () => {
           type="text"
           id="verificationCode"
           v-model="verificationCode"
-          placeholder="Wprowadź kod weryfikacyjny "
-          maxlength="6"
+          placeholder="Wprowadź kod weryfikacyjny"
+          maxlength="8"
           required
+          @input="verificationCode = verificationCode.replace(/\s/g, '')"
         />
       </div>
 
@@ -89,6 +136,34 @@ const resendCode = async () => {
         <span class="success-icon">&#x2714;</span> {{ successMessage }}
       </div>
 
+      <div
+        v-if="resendMessage"
+        class="resend-message"
+        :class="{
+          'error-message':
+            resendMessage.includes('błąd') ||
+            resendMessage.includes('Proszę poczekać'),
+          'success-message':
+            !resendMessage.includes('błąd') &&
+            !resendMessage.includes('Proszę poczekać'),
+        }"
+      >
+        <span
+          v-if="
+            resendMessage.includes('błąd') ||
+            resendMessage.includes('Proszę poczekać')
+          "
+          class="error-icon"
+          >&#x2716;</span
+        >
+        <span
+          v-else
+          class="success-icon"
+          >&#x2714;</span
+        >
+        {{ resendMessage }}
+      </div>
+
       <div class="button-container">
         <button
           @click="submitCode"
@@ -103,8 +178,12 @@ const resendCode = async () => {
         <p
           class="resend-text"
           @click="resendCode"
+          :class="{ disabled: isResending }"
         >
-          <span class="underline-text">Ponownie wyślij wiadomość e-mail</span>
+          <span class="underline-text">
+            <span v-if="isResending">Wysyłanie...</span>
+            <span v-else>Ponownie wyślij wiadomość e-mail</span>
+          </span>
         </p>
       </div>
     </div>
@@ -232,5 +311,25 @@ input:focus {
 
 .underline-text:hover {
   color: black;
+}
+
+.resend-message {
+  font-size: 14px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.success-icon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
 }
 </style>

@@ -8,6 +8,15 @@ definePageMeta({
 const certificates = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
+const router = useRouter();
+
+const goToProfile = () => {
+  router.push("/profile/profil");
+};
+
+const goToCourses = () => {
+  router.push("/profile/learning");
+};
 
 const fetchCertificates = async () => {
   try {
@@ -84,9 +93,8 @@ onMounted(fetchCertificates);
 
 <template>
   <UserNavbar />
+  <h2>Twoje certyfikaty</h2>
   <div class="certificates-container">
-    <h1>Twoje certyfikaty</h1>
-
     <div
       v-if="isLoading"
       class="loading-state"
@@ -170,6 +178,22 @@ onMounted(fetchCertificates);
       </div>
     </div>
   </div>
+
+  <div class="navigation-buttons">
+    <button
+      @click="goToProfile"
+      class="red-button"
+    >
+      Powrót do profilu
+    </button>
+
+    <button
+      @click="goToCourses"
+      class="red-button"
+    >
+      Moje kursy
+    </button>
+  </div>
   <foter></foter>
 </template>
 
@@ -181,9 +205,10 @@ onMounted(fetchCertificates);
   min-height: 600px;
 }
 
-h1 {
-  margin-bottom: 30px;
+h2 {
   text-align: center;
+  font-size: 50px;
+  margin-bottom: 16px;
   color: #333;
 }
 
@@ -340,5 +365,60 @@ h1 {
   border-radius: 5px;
   cursor: pointer;
   margin-top: 15px;
+}
+
+.navigation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.red-button {
+  background-color: rgba(235, 87, 87, 0.85);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.red-button:hover {
+  background-color: rgba(235, 87, 87, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.red-button:active {
+  transform: translateY(0);
+  background-color: rgba(194, 72, 72, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.red-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.red-button:active::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  transition: 0s;
 }
 </style>

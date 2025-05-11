@@ -202,6 +202,11 @@ const handleQuestionTypeChange = () => {
       { left_item: "", right_item: "", is_correct: true },
       { left_item: "", right_item: "", is_correct: true },
     ];
+  } else if (newQuestion.value.block_type === "true_false") {
+    newQuestion.value.answers = [
+      { text: "Prawda", is_correct: true },
+      { text: "Fałsz", is_correct: false },
+    ];
   } else {
     newQuestion.value.answers = [
       {
@@ -379,6 +384,13 @@ const removeMatchingPair = (index) => {
       "Pytanie typu dopasowanie musi zawierać co najmniej 2 pary elementów";
   }
 };
+
+// ------ Zarządzanie odpowiedziami dla pytań prawda/fałsz ----------------------
+
+const setTrueFalseAnswer = (index) => {
+  newQuestion.value.answers[0].is_correct = index === 0;
+  newQuestion.value.answers[1].is_correct = index === 1;
+};
 </script>
 
 <template>
@@ -537,6 +549,25 @@ const removeMatchingPair = (index) => {
               </div>
 
               <div
+                v-else-if="question.block_type === 'true_false'"
+                class="true-false-display"
+              >
+                <div
+                  v-for="(answer, i) in question.answers"
+                  :key="i"
+                  class="answer-row"
+                  :class="{ correct: answer.is_correct }"
+                >
+                  <span>{{ answer.text }}</span>
+                  <span
+                    v-if="answer.is_correct"
+                    class="correct-mark"
+                    >(poprawna)</span
+                  >
+                </div>
+              </div>
+
+              <div
                 v-else-if="question.block_type === 'text_input'"
                 class="text-answer-display"
               >
@@ -585,6 +616,7 @@ const removeMatchingPair = (index) => {
             <option value="multiple_choice">Wielokrotny wybór (ABCD)</option>
             <option value="text_input">Odpowiedź tekstowa</option>
             <option value="matching">Dopasowanie</option>
+            <option value="true_false">Prawda/Fałsz</option>
           </select>
         </div>
 
@@ -624,6 +656,9 @@ const removeMatchingPair = (index) => {
             >
             <template v-else-if="newQuestion.block_type === 'matching'"
               >(podaj poprawne pary):</template
+            >
+            <template v-else-if="newQuestion.block_type === 'true_false'"
+              >(wybierz poprawną odpowiedź):</template
             >
             <template v-else>(wybierz odpowiedź):</template>
           </label>
@@ -681,6 +716,30 @@ const removeMatchingPair = (index) => {
               class="form-control"
               placeholder="Wpisz poprawną odpowiedź"
             />
+          </div>
+
+          <div
+            v-else-if="newQuestion.block_type === 'true_false'"
+            class="true-false-answers"
+          >
+            <div class="true-false-option">
+              <input
+                type="radio"
+                name="true-false-answer"
+                :checked="newQuestion.answers[0].is_correct"
+                @change="() => setTrueFalseAnswer(0)"
+              />
+              <span>Prawda</span>
+            </div>
+            <div class="true-false-option">
+              <input
+                type="radio"
+                name="true-false-answer"
+                :checked="newQuestion.answers[1].is_correct"
+                @change="() => setTrueFalseAnswer(1)"
+              />
+              <span>Fałsz</span>
+            </div>
           </div>
 
           <div
@@ -1221,5 +1280,37 @@ const removeMatchingPair = (index) => {
 
 .btn-cancel:hover {
   background-color: #e0e0e0;
+}
+
+.true-false-answers {
+  margin: 15px 0;
+  padding: 10px 0;
+}
+
+.true-false-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.true-false-option:hover {
+  background-color: #f0f0f0;
+}
+
+.true-false-option input[type="radio"] {
+  margin-right: 12px;
+  cursor: pointer;
+  accent-color: #eb5757;
+  width: 18px;
+  height: 18px;
+}
+
+.true-false-option span {
+  font-size: 16px;
+  font-weight: 500;
 }
 </style>

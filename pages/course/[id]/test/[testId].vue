@@ -1,6 +1,7 @@
 <script setup>
 // ------ Importy i Meta ---------------------------------------------------
 
+import { ref, onMounted, computed, onBeforeUnmount } from "vue";
 import { useTestStore } from "~/stores/testStore";
 
 definePageMeta({
@@ -29,7 +30,7 @@ const hasAttempted = ref(false);
 const showResults = ref(false);
 const testResults = ref(null);
 const timerInterval = ref(null);
-const remainingTime = ref(null);
+const timeLeft = ref(null);
 
 // ------ Walidacja formularza ---------------------------------------------
 
@@ -195,6 +196,8 @@ const handleTextInput = (questionId, value) => {
   textInputAnswers.value[questionId] = value;
 };
 
+const handleTextInputChange = handleTextInput;
+
 // ------ Obsługa pytań matching ---------------------------------------
 
 const updateMatching = (questionId, leftId, rightItem) => {
@@ -220,37 +223,27 @@ const isAnswerSelected = (questionId, answerId) => {
 // ------ Uruchamianie licznika czasu -------------------------------------
 
 const startTimer = () => {
-  if (
-    !currentTest.value ||
-    !currentTest.value.time_limit ||
-    currentTest.value.time_limit <= 0
-  ) {
-    return;
-  }
-
-  const timeLimit = currentTest.value.time_limit * 60;
-  remainingTime.value = timeLimit;
-
+  if (hasAttempted.value || !currentTest.value?.time_limit) return;
+  timeLeft.value = currentTest.value.time_limit * 60;
   timerInterval.value = setInterval(() => {
-    if (remainingTime.value > 0) {
-      remainingTime.value--;
+    if (timeLeft.value > 0) {
+      timeLeft.value--;
     } else {
       clearInterval(timerInterval.value);
-      submitTest();
+      if (!hasAttempted.value) {
+        handleTimeUp();
+      }
     }
   }, 1000);
 };
 
 // ------ Formatowanie czasu -----------------------------------------------
 
-const formatTime = (seconds) => {
-  if (!seconds) return "--:--";
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, "0")}:${secs
-    .toString()
-    .padStart(2, "0")}`;
-};
+const formattedTimeLeft = computed(() => {
+  const minutes = Math.floor(timeLeft.value / 60);
+  const seconds = timeLeft.value % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+});
 
 // ------ Wysyłanie odpowiedzi i wyświetlanie wyników ----------------------
 
@@ -356,26 +349,26 @@ const resetTest = () => {
         textInputAnswers.value[question.id] = "";
       } else if (question.block_type === "matching") {
         matchingAnswers.value[question.id] = {};
-        if (question.answers && question.answers.leftItems) {
-          question.answers.leftItems.forEach((item) => {
-            matchingAnswers.value[question.id][item.id] = "";
-          });
-        }
       } else {
         userAnswers.value[question.id] = null;
       }
     });
-
-    startTimer();
-  } else {
-    loadTest();
   }
+  startTimer();
 };
 
 // ------ Powrót do strony kursu ----------------------------------------
 
 const backToCourse = () => {
   router.push(`/course/${courseId}`);
+};
+
+const backToChapter = backToCourse;
+
+// ------ Wysłanie kursu po czasie ----------------------------------------
+
+const handleTimeUp = async () => {
+  await submitTest();
 };
 </script>
 
@@ -386,22 +379,20 @@ const backToCourse = () => {
       class="loading-wrapper"
     >
       <div class="loading-spinner"></div>
-      <p>Ładowanie testu...</p>
+      <p>Ładowanie...</p>
     </div>
-
     <div
       v-else-if="error"
       class="error-box"
     >
       <p>{{ error }}</p>
       <button
-        @click="backToCourse"
+        @click="backToChapter"
         class="back-button"
       >
-        Powrót do kursu
+        Powrót do rozdziału
       </button>
     </div>
-
     <div
       v-else-if="currentTest"
       class="test-container"
@@ -413,132 +404,160 @@ const backToCourse = () => {
       >
         {{ currentTest.description }}
       </p>
-
       <div
-        v-if="currentTest.time_limit && !showResults"
         class="timer-container"
+        v-if="currentTest.time_limit && !showResults"
       >
         <div
           class="timer"
-          :class="{ 'time-low': remainingTime < 60 }"
+          :class="{ 'time-low': timeLeft < 60 }"
         >
-          <span class="timer-icon">⏱️</span>
-          <span class="timer-text">{{ formatTime(remainingTime) }}</span>
+          <i class="timer-icon">⏱</i>
+          <span class="timer-text">{{ formattedTimeLeft }}</span>
         </div>
       </div>
-
       <div
         v-if="!showResults"
-        class="questions-container"
+        v-for="(question, qIndex) in currentTest.questions"
+        :key="question.id"
+        class="question-card"
       >
+        <h3 class="question-number">
+          Pytanie {{ qIndex + 1 }}/{{ currentTest.questions.length }}
+        </h3>
+        <div class="question-text">{{ question.question_text }}</div>
+        <div class="points-info">Punkty: {{ question.points || 1 }}</div>
+
         <div
-          v-for="(question, index) in currentTest.questions"
-          :key="question.id"
-          class="question-card"
+          v-if="
+            question.block_type !== 'text_input' &&
+            question.block_type !== 'matching'
+          "
+          class="answers-list"
         >
-          <h2 class="question-number">Pytanie {{ index + 1 }}</h2>
-          <p class="question-text">{{ question.question_text }}</p>
-          <p class="points-info">Punkty: {{ question.points }}</p>
-
           <div
-            v-if="question.block_type === 'text_input'"
-            class="text-input-container"
-          >
-            <input
-              type="text"
-              v-model="textInputAnswers[question.id]"
-              class="text-answer-input"
-              placeholder="Wpisz odpowiedź..."
-              :disabled="hasAttempted"
-            />
-          </div>
-          <div
-            v-else-if="question.block_type === 'matching'"
-            class="matching-question-container"
-          >
-            <div class="matching-items">
-              <div class="matching-left-column">
-                <div
-                  v-for="leftItem in question.answers.leftItems"
-                  :key="leftItem.id"
-                  class="matching-left-item"
-                >
-                  <span class="matching-item-text">{{
-                    leftItem.left_item
-                  }}</span>
-                  <span class="matching-arrow">→</span>
-                </div>
-              </div>
-
-              <div class="matching-right-column">
-                <div
-                  v-for="leftItem in question.answers.leftItems"
-                  :key="leftItem.id"
-                  class="matching-right-item"
-                >
-                  <select
-                    v-model="matchingAnswers[question.id][leftItem.id]"
-                    class="matching-select"
-                    :disabled="hasAttempted"
-                    @change="
-                      updateMatching(
-                        question.id,
-                        leftItem.id,
-                        $event.target.value
-                      )
-                    "
-                  >
-                    <option value="">Wybierz...</option>
-                    <option
-                      v-for="(rightItem, index) in question.answers.rightItems"
-                      :key="index"
-                      :value="rightItem"
-                      :disabled="
-                        Object.values(
-                          matchingAnswers[question.id] || {}
-                        ).includes(rightItem) &&
-                        matchingAnswers[question.id][leftItem.id] !== rightItem
-                      "
-                    >
-                      {{ rightItem }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            v-else
-            class="answers-list"
+            v-for="answer in question.answers"
+            :key="answer.id"
+            class="answer-option"
+            :class="{
+              selected: isAnswerSelected(question.id, answer.id),
+              disabled: hasAttempted,
+            }"
+            @click="selectAnswer(question, answer.id)"
           >
             <div
-              v-for="answer in question.answers"
-              :key="answer.id"
-              class="answer-option"
+              class="answer-checkbox"
               :class="{
-                selected: isAnswerSelected(question.id, answer.id),
-                disabled: hasAttempted,
+                checked: isAnswerSelected(question.id, answer.id),
+                'checkbox-multiple': question.block_type === 'multiple_choice',
               }"
-              @click="selectAnswer(question, answer.id)"
             >
               <div
-                class="answer-checkbox"
+                class="checkbox-inner"
                 :class="{
-                  checked: isAnswerSelected(question.id, answer.id),
-                  'checkbox-multiple':
+                  'checkbox-multiple-inner':
                     question.block_type === 'multiple_choice',
                 }"
+              ></div>
+            </div>
+            <div class="answer-content">
+              <span class="answer-letter"
+                >{{ ["A", "B", "C", "D"][answer.sort_order - 1] }}.</span
               >
-                <div
-                  class="checkbox-inner"
-                  :class="{
-                    'checkbox-multiple-inner':
-                      question.block_type === 'multiple_choice',
-                  }"
-                ></div>
+              <span class="answer-text">{{ answer.text }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="question.block_type === 'true_false'"
+          class="true-false-container"
+        >
+          <div
+            v-for="answer in question.answers"
+            :key="answer.id"
+            class="true-false-option"
+            :class="{
+              selected: isAnswerSelected(question.id, answer.id),
+              disabled: hasAttempted,
+            }"
+            @click="selectAnswer(question, answer.id)"
+          >
+            <div
+              class="answer-checkbox"
+              :class="{ checked: isAnswerSelected(question.id, answer.id) }"
+            >
+              <div class="checkbox-inner"></div>
+            </div>
+            <div class="answer-content">
+              <span class="answer-text">{{ answer.text }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="question.block_type === 'text_input'"
+          class="text-input-container"
+        >
+          <input
+            type="text"
+            v-model="textInputAnswers[question.id]"
+            class="text-answer-input"
+            placeholder="Wpisz odpowiedź..."
+            :disabled="hasAttempted"
+            @input="handleTextInputChange(question.id, $event.target.value)"
+          />
+        </div>
+
+        <div
+          v-else-if="question.block_type === 'matching'"
+          class="matching-question-container"
+        >
+          <div class="matching-items">
+            <div class="matching-left-column">
+              <div
+                v-for="leftItem in question.answers.leftItems"
+                :key="leftItem.id"
+                class="matching-left-item"
+              >
+                <span class="matching-item-text">{{ leftItem.left_item }}</span>
+                <span class="matching-arrow">→</span>
               </div>
-              <div class="answer-content">
-                <span class="answer-text">{{ answer.text }}</span>
+            </div>
+
+            <div class="matching-right-column">
+              <div
+                v-for="leftItem in question.answers.leftItems"
+                :key="leftItem.id"
+                class="matching-right-item"
+              >
+                <select
+                  v-model="matchingAnswers[question.id][leftItem.id]"
+                  class="matching-select"
+                  :disabled="hasAttempted"
+                  @change="
+                    updateMatching(
+                      question.id,
+                      leftItem.id,
+                      $event.target.value
+                    )
+                  "
+                >
+                  <option value="">Wybierz...</option>
+                  <option
+                    v-for="(rightItem, index) in question.answers.rightItems"
+                    :key="index"
+                    :value="rightItem"
+                    :disabled="
+                      Object.values(
+                        matchingAnswers[question.id] || {}
+                      ).includes(rightItem) &&
+                      matchingAnswers[question.id][leftItem.id] !== rightItem
+                    "
+                  >
+                    {{ rightItem }}
+                  </option>
+                </select>
               </div>
             </div>
           </div>
@@ -546,14 +565,14 @@ const backToCourse = () => {
       </div>
 
       <div
-        v-if="!showResults"
         class="test-actions"
+        v-if="!hasAttempted && !showResults"
       >
         <button
-          @click="backToCourse"
+          @click="backToChapter"
           class="cancel-button"
         >
-          Anuluj
+          Anuluj test
         </button>
         <button
           @click="submitTest"
@@ -646,9 +665,6 @@ const backToCourse = () => {
 <style scoped>
 .test-page-container {
   min-height: calc(100vh - 120px);
-  padding: 20px;
-  background-color: white;
-  border-radius: 8px;
 }
 
 .test-container {
@@ -657,19 +673,16 @@ const backToCourse = () => {
 }
 
 .loading-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
+  text-align: center;
+  padding: 30px 0;
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  margin-bottom: 15px;
+  margin: 0 auto 20px;
   border: 4px solid rgba(235, 87, 87, 0.2);
-  border-top-color: rgba(235, 87, 87, 0.85);
+  border-top-color: #eb5757;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -713,25 +726,28 @@ const backToCourse = () => {
   display: inline-flex;
   align-items: center;
   background-color: #f8f9fa;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-radius: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-weight: 600;
+  min-width: 90px;
 }
 
 .timer.time-low {
   background-color: #ffecec;
-  color: rgba(235, 87, 87, 0.85);
+  color: #dc3545;
   animation: pulse 1s infinite;
 }
 
 .timer-icon {
-  margin-right: 8px;
+  margin-right: 6px;
+  font-style: normal;
 }
 
 .timer-text {
   font-size: 16px;
   letter-spacing: 0.5px;
+  width: 40px;
 }
 
 @keyframes pulse {
@@ -823,10 +839,6 @@ const backToCourse = () => {
 .answer-checkbox.checked {
   border-color: rgba(235, 87, 87, 0.85);
   background-color: rgba(235, 87, 87, 0.85);
-}
-
-.answer-checkbox.checkbox-multiple {
-  border-radius: 4px;
 }
 
 .checkbox-inner {
@@ -1200,5 +1212,54 @@ const backToCourse = () => {
 .matching-select:disabled {
   background-color: #e9ecef;
   cursor: not-allowed;
+}
+
+.true-false-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.true-false-option {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.true-false-option:hover:not(.disabled) {
+  background-color: #f8f9fa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.true-false-option.selected {
+  background-color: #f1f8ff;
+  border-color: rgba(235, 87, 87, 0.85);
+  box-shadow: 0 2px 8px rgba(235, 87, 87, 0.2);
+}
+
+.true-false-option.disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.true-false-option .answer-text {
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.true-false-option .answer-checkbox {
+  min-width: 22px;
+  height: 22px;
+}
+
+.true-false-option.selected .answer-checkbox {
+  background-color: rgba(235, 87, 87, 0.85);
 }
 </style>
