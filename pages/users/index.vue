@@ -19,6 +19,9 @@ const searchQuery = ref("");
 const currentPage = ref(1);
 const totalPages = ref(1);
 const logsPerPage = 15;
+const dateFrom = ref("");
+const dateTo = ref("");
+const isFilterActive = ref(false);
 
 // ------ Logi operacji użytkowników -----------------------------
 
@@ -151,9 +154,16 @@ const fetchLogs = async () => {
     logsLoading.value = true;
     logsError.value = null;
 
-    const response = await useApiFrontend(
-      `logs?page=${currentPage.value}&limit=${logsPerPage}`
-    );
+    let url = `logs?page=${currentPage.value}&limit=${logsPerPage}`;
+
+    if (dateFrom.value) {
+      url += `&fromDate=${dateFrom.value}T00:00:00.000Z`;
+    }
+    if (dateTo.value) {
+      url += `&toDate=${dateTo.value}T23:59:59.999Z`;
+    }
+
+    const response = await useApiFrontend(url);
 
     if (response && response.success) {
       logs.value = response.logs || [];
@@ -181,6 +191,20 @@ const changePage = (newPage) => {
 };
 
 // ------ Formatowanie daty ------------------------------------
+
+const applyDateFilter = () => {
+  isFilterActive.value = !!(dateFrom.value || dateTo.value);
+  currentPage.value = 1; // Resetuj stronę po zmianie filtrów
+  fetchLogs();
+};
+
+const clearDateFilter = () => {
+  dateFrom.value = "";
+  dateTo.value = "";
+  isFilterActive.value = false;
+  currentPage.value = 1;
+  fetchLogs();
+};
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -366,6 +390,43 @@ watch(logsRefreshCounter, () => {
           <h2>Historia operacji</h2>
           <p class="section-description">Zmiany ról i usuwanie użytkowników</p>
 
+          <div class="filter-container">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label for="date-from">Od daty:</label>
+                <input
+                  id="date-from"
+                  v-model="dateFrom"
+                  type="date"
+                  class="date-input"
+                />
+              </div>
+              <div class="filter-group">
+                <label for="date-to">Do daty:</label>
+                <input
+                  id="date-to"
+                  v-model="dateTo"
+                  type="date"
+                  class="date-input"
+                />
+              </div>
+              <div class="filter-actions">
+                <button
+                  @click="applyDateFilter"
+                  class="btn-filter"
+                >
+                  Filtruj
+                </button>
+                <button
+                  @click="clearDateFilter"
+                  class="btn-clear-filter"
+                  :disabled="!isFilterActive"
+                >
+                  Wyczyść
+                </button>
+              </div>
+            </div>
+          </div>
           <div
             v-if="logsLoading"
             class="logs-loading"
@@ -949,6 +1010,111 @@ watch(logsRefreshCounter, () => {
 .pagination-info {
   font-size: 14px;
   color: #6c757d;
+}
+
+.filter-container {
+  margin-bottom: 15px;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #495057;
+}
+
+.date-input {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-filter,
+.btn-clear-filter {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-filter {
+  background-color: #eb5757;
+  color: white;
+}
+
+.btn-filter:hover {
+  background-color: #d64545;
+}
+
+.btn-clear-filter {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-clear-filter:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.btn-clear-filter:disabled {
+  background-color: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #e2f2ff;
+  color: #0d6efd;
+  padding: 5px 10px;
+  border-radius: 16px;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.btn-clear-badge {
+  background: none;
+  border: none;
+  color: #0d6efd;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 0 5px;
+}
+
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
 }
 
 @media (max-width: 768px) {
