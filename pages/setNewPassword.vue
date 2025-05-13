@@ -1,6 +1,11 @@
 <script setup>
 definePageMeta({
   layout: "login",
+  middleware: (to) => {
+    if (!to.query.token) {
+      return navigateTo("/resetPassword");
+    }
+  },
 });
 
 const route = useRoute();
@@ -11,6 +16,15 @@ const newPassword = ref("");
 const confirmPassword = ref("");
 const errorMessage = ref("");
 const isSuccess = ref(false);
+
+const validatePassword = (password) => {
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{10,}$/;
+
+  if (!passwordRegex.test(password)) {
+    return "Hasło musi mieć co najmniej 10 znaków, zawierać jedną dużą literę i jedną cyfrę.";
+  }
+  return "";
+};
 
 const handleSetNewPassword = async () => {
   if (!token.value) {
@@ -23,8 +37,9 @@ const handleSetNewPassword = async () => {
     return;
   }
 
-  if (newPassword.value.length < 8) {
-    errorMessage.value = "Hasło musi mieć co najmniej 8 znaków";
+  const passwordValidationError = validatePassword(newPassword.value);
+  if (passwordValidationError) {
+    errorMessage.value = passwordValidationError;
     return;
   }
 

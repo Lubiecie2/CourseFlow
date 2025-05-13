@@ -7,6 +7,7 @@ const email = ref("");
 const isSubmitted = ref(false);
 const errorMessage = ref("");
 const isSubmitting = ref(false);
+const router = useRouter();
 
 const handleResetPassword = async () => {
   if (!email.value) {
@@ -24,6 +25,10 @@ const handleResetPassword = async () => {
     });
 
     isSubmitted.value = true;
+
+    setTimeout(() => {
+      router.push("/login");
+    }, 2000);
   } catch (error) {
     console.error("Błąd podczas wysyłania żądania resetowania hasła:", error);
 

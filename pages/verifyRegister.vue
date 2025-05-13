@@ -43,16 +43,20 @@ const submitCode = async () => {
 
     if (response && response.message) {
       successMessage.value = response.message;
+      errorMessage.value = "";
       setTimeout(() => {
         router.push("/login");
       }, 2000);
     } else if (response && response.error) {
       errorMessage.value = response.error;
+      successMessage.value = "";
     } else {
       errorMessage.value = "Niepoprawny kod weryfikacyjny.";
+      successMessage.value = "";
     }
   } catch (error: any) {
     console.error("Błąd weryfikacji:", error);
+    successMessage.value = "";
 
     if (error.response?.data?.error) {
       errorMessage.value = error.response.data.error;
