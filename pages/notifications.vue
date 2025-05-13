@@ -152,7 +152,7 @@ onMounted(() => {
                   />
                   <img
                     v-else-if="notification.type === 'NEW_COURSE'"
-                    src="/public/images/sign.png"
+                    src="/public/images/cts.png"
                     alt="Nowy kurs"
                   />
                   <img

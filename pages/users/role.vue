@@ -209,12 +209,6 @@ const translatePermissions = {
   PANEL_CREATE_ROLE: "Tworzenie ról",
   PANEL_SHOW_USERS: "Dostęp do panelu użytkowników",
 };
-
-// ------ Nawigacja do sekcji użytkownika -----------------------------
-
-const goToUsers = () => {
-  navigateTo("/users");
-};
 </script>
 
 <template>
@@ -222,7 +216,7 @@ const goToUsers = () => {
     <adminNavbar></adminNavbar>
     <div class="course-management">
       <div class="mobile-nav">
-        <div class="mobile-nav-title">Panel administracyjny</div>
+        <div class="mobile-nav-title">Zarządzanie użytkownikami</div>
         <div class="mobile-nav-buttons">
           <button
             class="mobile-nav-btn"
@@ -234,17 +228,29 @@ const goToUsers = () => {
         </div>
       </div>
       <div class="sidebar">
-        <h3 class="sidebar-title">Panel administracyjny</h3>
+        <h3 class="sidebar-title">Zarządzanie użytkownikami</h3>
         <nav class="sidebar-nav">
-          <div
+          <NuxtLink
+            to="/users"
             class="nav-item"
-            @click="goToUsers"
+            active-class="active"
           >
             <span class="nav-text">Użytkownicy</span>
-          </div>
-          <div class="nav-item active">
+          </NuxtLink>
+          <NuxtLink
+            to="/users/role"
+            class="nav-item"
+            active-class="active"
+          >
             <span class="nav-text">Role i uprawnienia</span>
-          </div>
+          </NuxtLink>
+          <NuxtLink
+            to="/users/notifications"
+            class="nav-item"
+            active-class="active"
+          >
+            <span class="nav-text">Powiadomienia</span>
+          </NuxtLink>
         </nav>
       </div>
       <div class="content-area">
@@ -472,39 +478,45 @@ const goToUsers = () => {
   width: 250px;
   background-color: white;
   border-right: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-title {
-  padding: 20px;
-  font-size: 18px;
+  padding: 15px;
+  margin: 0;
   font-weight: 600;
-  border-bottom: 1px solid #e9ecef;
 }
 
 .sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  padding: 15px 0;
+  padding: 10px 0;
 }
 
 .nav-item {
-  padding: 12px 20px;
+  padding: 12px 15px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .nav-item:hover {
-  background-color: #f8f9fa;
+  background-color: #f1f3f5;
 }
 
 .nav-item.active {
-  background-color: #eff6ff;
-  border-left: 3px solid #eb5757;
+  background-color: #f8f9fa;
+  color: #eb5757;
   font-weight: 500;
 }
 
-.nav-text {
-  margin-left: 8px;
+.nav-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e9ecef;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .content-area {

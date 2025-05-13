@@ -65,7 +65,7 @@ const sendNotification = async () => {
             <span class="nav-text">Użytkownicy</span>
           </NuxtLink>
           <NuxtLink
-            to="/role"
+            to="/users/role"
             class="nav-item"
             active-class="active"
           >

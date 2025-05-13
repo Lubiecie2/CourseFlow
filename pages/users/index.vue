@@ -149,6 +149,8 @@ const deleteUser = async () => {
   }
 };
 
+//  ------ Pobieranie logów operacji -----------------------------
+
 const fetchLogs = async () => {
   try {
     logsLoading.value = true;
@@ -194,9 +196,11 @@ const changePage = (newPage) => {
 
 const applyDateFilter = () => {
   isFilterActive.value = !!(dateFrom.value || dateTo.value);
-  currentPage.value = 1; // Resetuj stronę po zmianie filtrów
+  currentPage.value = 1;
   fetchLogs();
 };
+
+// ------ Czyszczenie filtrów daty -----------------------------
 
 const clearDateFilter = () => {
   dateFrom.value = "";
@@ -205,6 +209,8 @@ const clearDateFilter = () => {
   currentPage.value = 1;
   fetchLogs();
 };
+
+// ------ Formatowanie daty -------------------------------------
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -243,7 +249,7 @@ watch(logsRefreshCounter, () => {
           <span class="nav-text">Użytkownicy</span>
         </NuxtLink>
         <NuxtLink
-          to="/role"
+          to="/users/role"
           class="nav-item"
           active-class="active"
         >
@@ -613,34 +619,35 @@ watch(logsRefreshCounter, () => {
   width: 250px;
   background-color: white;
   border-right: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-title {
-  padding: 20px;
-  font-size: 18px;
+  padding: 15px;
+  margin: 0;
   font-weight: 600;
-  border-bottom: 1px solid #e9ecef;
 }
 
 .sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  padding: 15px 0;
+  padding: 10px 0;
 }
 
 .nav-item {
-  padding: 12px 20px;
+  padding: 12px 15px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .nav-item:hover {
-  background-color: #f8f9fa;
+  background-color: #f1f3f5;
 }
 
 .nav-item.active {
   background-color: #f8f9fa;
   color: #eb5757;
+  font-weight: 500;
 }
 
 .nav-item {
