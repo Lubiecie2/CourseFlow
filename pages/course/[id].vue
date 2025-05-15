@@ -57,7 +57,7 @@ onMounted(async () => {
   try {
     isLoading.value = true;
 
-    const courseResponse = await useApiFrontend(`/courses/${courseId}`);
+    const courseResponse = await useApiServer(`/courses/${courseId}`);
     course.value = courseResponse;
 
     const chaptersResponse = await useApiFrontend(
@@ -84,7 +84,7 @@ onMounted(async () => {
 const checkChapterTestsStatus = async () => {
   try {
     for (const chapter of chapters.value) {
-      const testsResponse = await useApiFrontend(
+      const testsResponse = await useApiServer(
         `chapterTest/${courseId}/chapters/${chapter.id}/tests`
       );
 

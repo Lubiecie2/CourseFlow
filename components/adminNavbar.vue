@@ -21,6 +21,10 @@ const goToCourseList = () => {
   router.push("/courseList");
 };
 
+const goToSettings = () => {
+  router.push("/options/partitions");
+};
+
 const userStore = useUserStore();
 const { user, isLogged } = storeToRefs(userStore);
 const { logout } = userStore;
@@ -46,6 +50,12 @@ const { logout } = userStore;
       </div>
 
       <div class="nav-button-container">
+        <button
+          class="red-button"
+          @click="goToSettings"
+        >
+          Ustawienia strony
+        </button>
         <button
           class="red-button"
           @click="goToCourseList"
@@ -89,6 +99,12 @@ const { logout } = userStore;
         class="mobile-menu"
         v-if="menuOpen"
       >
+        <button
+          class="red-button"
+          @click="goToSettings"
+        >
+          Ustawienia strony
+        </button>
         <button
           class="red-button"
           @click="goToCourseList"
