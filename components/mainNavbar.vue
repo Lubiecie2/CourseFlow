@@ -28,6 +28,10 @@ const goToAdminPanel = () => {
   router.push("/admin");
 };
 
+const goToCommunity = () => {
+  router.push("/community/questions");
+};
+
 function toggleMenu() {
   menuOpen.value = !menuOpen.value;
 }
@@ -71,6 +75,12 @@ const { logout } = userStore;
         </button>
         <button
           class="red-button"
+          @click="goToCommunity"
+        >
+          Społeczność
+        </button>
+        <button
+          class="red-button"
           @click="goToCourses"
         >
           Kursy
@@ -101,6 +111,12 @@ const { logout } = userStore;
           @click="goToCourses"
         >
           Kursy
+        </button>
+        <button
+          class="red-button"
+          @click="goToCommunity"
+        >
+          Społeczność
         </button>
         <button
           class="red-button"
@@ -144,6 +160,12 @@ const { logout } = userStore;
         </button>
         <button
           class="red-button"
+          @click="goToCommunity"
+        >
+          Społeczność
+        </button>
+        <button
+          class="red-button"
           @click="goToCourses"
         >
           Kursy
@@ -155,6 +177,12 @@ const { logout } = userStore;
             @click="goToProfile"
           >
             Profil
+          </button>
+          <button
+            class="red-button"
+            @click="goToCommunity"
+          >
+            Społeczność
           </button>
           <button
             class="red-button"
