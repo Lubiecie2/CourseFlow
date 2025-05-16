@@ -18,6 +18,38 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const totalQuestions = ref(0);
 const questionsPerPage = 10;
+const { $socket } = useNuxtApp();
+
+// ------ Inicjalizacja WebSocketa -------------------------------
+
+const initializeSocketConnection = () => {
+  if (!$socket.connected) {
+    $socket.connect();
+  }
+
+  $socket.emit("join-questions-list");
+
+  $socket.on("new-question", (question) => {
+    if (!questions.value.some((q) => q.id === question.id)) {
+      question.isNew = true;
+      questions.value.unshift(question);
+      totalQuestions.value++;
+
+      setTimeout(() => {
+        const index = questions.value.findIndex((q) => q.id === question.id);
+        if (index !== -1) {
+          questions.value[index].isNew = false;
+        }
+      }, 15000);
+
+      if (
+        Math.ceil(totalQuestions.value / questionsPerPage) > totalPages.value
+      ) {
+        totalPages.value++;
+      }
+    }
+  });
+};
 
 // ------ Filtrowanie pytań -----------------------------------------
 
@@ -146,9 +178,18 @@ const formatDate = (date) => {
 
 // ------ Montowanie po odpaleniu strony -------------------------------
 
+onBeforeUnmount(() => {
+  if ($socket && $socket.connected) {
+    $socket.emit("leave-questions-list");
+    $socket.off("new-question");
+    $socket.disconnect();
+  }
+});
+
 onMounted(() => {
   fetchQuestions();
   fetchCourses();
+  initializeSocketConnection();
 });
 </script>
 
@@ -260,6 +301,7 @@ onMounted(() => {
           :key="question.id"
           @click="viewQuestion(question.id)"
           class="question-item"
+          :class="{ new: question.isNew }"
         >
           <div class="question-header">
             <h3 class="question-title">{{ question.title }}</h3>
@@ -545,6 +587,41 @@ onMounted(() => {
   padding: 12px 15px;
   color: #555;
   line-height: 1.4;
+}
+
+.question-item.new {
+  animation: highlightNewQuestion 2s ease-out;
+  position: relative;
+  border-left: 4px solid #eb5757;
+}
+
+@keyframes highlightNewQuestion {
+  0% {
+    background-color: rgba(235, 87, 87, 0.2);
+    transform: translateY(-5px);
+  }
+  30% {
+    background-color: rgba(235, 87, 87, 0.15);
+    transform: translateY(0);
+  }
+  100% {
+    background-color: rgba(255, 240, 240, 0.5);
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .pagination {

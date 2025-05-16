@@ -18,6 +18,36 @@ const totalAnswers = ref(0);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const answersPerPage = 5;
+const { $socket } = useNuxtApp();
+
+// ------ Inicjalizacja WebSocketa -------------------------------
+
+const initializeSocketConnection = () => {
+  if (!$socket.connected) {
+    $socket.connect();
+  }
+
+  $socket.emit("join-question", questionId);
+
+  $socket.on("new-answer", (answer) => {
+    if (!answers.value.some((a) => a.id === answer.id)) {
+      answer.isNew = true;
+      answers.value.unshift(answer);
+      totalAnswers.value++;
+
+      setTimeout(() => {
+        const index = answers.value.findIndex((a) => a.id === answer.id);
+        if (index !== -1) {
+          answers.value[index].isNew = false;
+        }
+      }, 15000);
+
+      if (Math.ceil(totalAnswers.value / answersPerPage) > totalPages.value) {
+        totalPages.value++;
+      }
+    }
+  });
+};
 
 // ------ Pobieranie pytania ---------------------------------------
 
@@ -82,7 +112,6 @@ const addAnswer = async () => {
 
     if (response && response.success) {
       newAnswer.value.content = "";
-      await fetchAnswers(1);
     }
   } catch (err) {
     console.error("Błąd podczas dodawania odpowiedzi:", err);
@@ -110,7 +139,18 @@ const formatDate = (date) => {
   return new Date(date).toLocaleString("pl");
 };
 
-onMounted(fetchQuestion);
+onBeforeUnmount(() => {
+  if ($socket.connected) {
+    $socket.emit("leave-question", questionId);
+    $socket.off("new-answer");
+    $socket.disconnect();
+  }
+});
+
+onMounted(async () => {
+  await fetchQuestion();
+  initializeSocketConnection();
+});
 </script>
 
 <template>
@@ -184,6 +224,7 @@ onMounted(fetchQuestion);
                 v-for="answer in answers"
                 :key="answer.id"
                 class="answer-item"
+                :class="{ new: answer.isNew }"
               >
                 <div class="answer-content">
                   {{ answer.content }}
@@ -354,6 +395,17 @@ onMounted(fetchQuestion);
   font-size: 20px;
   font-weight: 600;
   word-break: break-word;
+}
+
+.answer-item.new {
+  animation: highlightNewAnswer 5s ease-out;
+  position: relative;
+  border-left: 4px solid #eb5757;
+  background-color: #eb5757;
+}
+
+.answer-item.new .answer-content {
+  background-color: #fffafa;
 }
 
 .course-badge {
