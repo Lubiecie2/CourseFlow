@@ -160,15 +160,15 @@ const { logout } = userStore;
         </button>
         <button
           class="red-button"
-          @click="goToCommunity"
-        >
-          Społeczność
-        </button>
-        <button
-          class="red-button"
           @click="goToCourses"
         >
           Kursy
+        </button>
+        <button
+          class="red-button"
+          @click="goToCommunity"
+        >
+          Społeczność
         </button>
 
         <template v-if="isLogged">
@@ -177,12 +177,6 @@ const { logout } = userStore;
             @click="goToProfile"
           >
             Profil
-          </button>
-          <button
-            class="red-button"
-            @click="goToCommunity"
-          >
-            Społeczność
           </button>
           <button
             class="red-button"
@@ -255,6 +249,10 @@ const { logout } = userStore;
 
 .nav-button-container {
   margin-right: 10vh;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .hamburger {
@@ -367,6 +365,9 @@ const { logout } = userStore;
   align-items: center;
   background-color: #fff;
   padding: 10px 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  position: relative;
 }
 
 .mobile-menu .red-button {
@@ -378,6 +379,10 @@ const { logout } = userStore;
 .slide-leave-active {
   transition: max-height 0.5s ease, opacity 0.5s ease;
 }
+.slide-leave-active {
+  position: absolute;
+  width: 100%;
+}
 .slide-enter-from,
 .slide-leave-to {
   max-height: 0;
@@ -385,8 +390,16 @@ const { logout } = userStore;
 }
 .slide-enter-to,
 .slide-leave-from {
-  max-height: 300px;
+  max-height: 500px;
   opacity: 1;
+}
+
+@media (max-width: 1200px) {
+  .nav-button-container .red-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    margin-right: 10px;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -415,6 +428,29 @@ const { logout } = userStore;
   }
   .break-line {
     display: none;
+  }
+  .navbar {
+    height: 90px;
+  }
+  .navbar img {
+    width: 120px;
+    height: 60px;
+  }
+  .nav-logo {
+    margin-left: 3vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar img {
+    width: 100px;
+    height: 50px;
+  }
+  .nav-logo {
+    margin-left: 2vh;
+  }
+  .hamburger {
+    margin-right: 2vh;
   }
 }
 </style>

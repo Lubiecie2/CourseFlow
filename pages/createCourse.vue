@@ -1,9 +1,4 @@
 <script setup>
-definePageMeta({
-  layout: "login",
-  middleware: "auth",
-});
-
 import CourseCardFrom from "~/components/courseCardFrom.vue";
 
 definePageMeta({

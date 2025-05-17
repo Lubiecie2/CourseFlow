@@ -19,6 +19,12 @@ const currentPage = ref(1);
 const totalPages = ref(1);
 const answersPerPage = 5;
 const { $socket } = useNuxtApp();
+const userStore = useUserStore();
+const userId = computed(() => userStore?.user?.id);
+const isAdmin = computed(() => userStore?.user?.role_id === 1);
+const showConfirmDeleteAnswer = ref(null);
+const editingAnswer = ref(null);
+const editedAnswerContent = ref("");
 
 // ------ Inicjalizacja WebSocketa -------------------------------
 
@@ -45,6 +51,40 @@ const initializeSocketConnection = () => {
       if (Math.ceil(totalAnswers.value / answersPerPage) > totalPages.value) {
         totalPages.value++;
       }
+    }
+  });
+
+  $socket.on("question-updated", (updatedQuestion) => {
+    console.log("Otrzymano aktualizację pytania:", updatedQuestion);
+    if (question.value && question.value.id === parseInt(updatedQuestion.id)) {
+      question.value = { ...question.value, ...updatedQuestion };
+    }
+  });
+
+  $socket.on("question-removed", (removedQuestionId) => {
+    console.log("Otrzymano informację o usunięciu pytania:", removedQuestionId);
+    if (question.value && question.value.id === parseInt(removedQuestionId)) {
+      navigateTo("/community/questions");
+    }
+  });
+
+  $socket.on("answer-updated", (updatedAnswer) => {
+    console.log("Otrzymano aktualizację odpowiedzi:", updatedAnswer);
+    const index = answers.value.findIndex((a) => a.id === updatedAnswer.id);
+    if (index !== -1) {
+      answers.value[index] = { ...answers.value[index], ...updatedAnswer };
+    }
+  });
+
+  $socket.on("answer-removed", (removedAnswerId) => {
+    console.log(
+      "Otrzymano informację o usunięciu odpowiedzi:",
+      removedAnswerId
+    );
+    answers.value = answers.value.filter((a) => a.id !== removedAnswerId);
+    totalAnswers.value--;
+    if (answers.value.length === 0 && currentPage.value > 1) {
+      goToPage(currentPage.value - 1);
     }
   });
 };
@@ -120,6 +160,77 @@ const addAnswer = async () => {
   }
 };
 
+// ------ Usuwanie odpowiedzi -----------------------------------
+
+const confirmDeleteAnswer = (answerId) => {
+  showConfirmDeleteAnswer.value = answerId;
+};
+
+const deleteAnswer = async (answerId) => {
+  try {
+    const response = await useApiFrontend(`answers/${answerId}`, {
+      method: "DELETE",
+    });
+
+    if (response && response.success) {
+      if ($socket && $socket.connected) {
+        $socket.emit("answer-deleted", {
+          answerId: answerId,
+          questionId: questionId,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Błąd podczas usuwania odpowiedzi:", err);
+  } finally {
+    showConfirmDeleteAnswer.value = null;
+  }
+};
+
+// ------ Edycja odpowiedzi ------------------------------------
+
+const startEditAnswer = (answer) => {
+  editingAnswer.value = answer.id;
+  editedAnswerContent.value = answer.content;
+};
+
+const cancelEditAnswer = () => {
+  editingAnswer.value = null;
+};
+
+const saveEditedAnswer = async (answerId) => {
+  try {
+    if (!editedAnswerContent.value) return;
+
+    const response = await useApiFrontend(`answers/${answerId}`, {
+      method: "PATCH",
+      body: {
+        content: editedAnswerContent.value,
+      },
+    });
+
+    if (response && response.success) {
+      const index = answers.value.findIndex((a) => a.id === answerId);
+      if (index !== -1) {
+        answers.value[index].content = editedAnswerContent.value;
+      }
+
+      if ($socket && $socket.connected) {
+        $socket.emit("answer-edited", {
+          id: answerId,
+          question_id: questionId,
+          content: editedAnswerContent.value,
+          updated_at: new Date(),
+        });
+      }
+
+      editingAnswer.value = null;
+    }
+  } catch (err) {
+    console.error("Błąd podczas edycji odpowiedzi:", err);
+  }
+};
+
 // ------ Przechodzenie po stronach odpowiedzi ------------------------
 
 const goToPage = (page) => {
@@ -139,10 +250,24 @@ const formatDate = (date) => {
   return new Date(date).toLocaleString("pl");
 };
 
+// ------ Sprawdzanie czy użytkownik może edytować/usuwać -------------
+
+const canManageQuestion = computed(() => {
+  return userId.value === question.value?.user_id || isAdmin.value;
+});
+
+const canManageAnswer = (answer) => {
+  return userId.value === answer.user_id || isAdmin.value;
+};
+
 onBeforeUnmount(() => {
   if ($socket.connected) {
     $socket.emit("leave-question", questionId);
     $socket.off("new-answer");
+    $socket.off("question-updated");
+    $socket.off("question-removed");
+    $socket.off("answer-updated");
+    $socket.off("answer-removed");
     $socket.disconnect();
   }
 });
@@ -187,14 +312,17 @@ onMounted(async () => {
         class="question-detail"
       >
         <div class="question-header-detail">
-          <h2 class="question-title-detail">{{ question.title }}</h2>
-          <div
-            v-if="question.courses"
-            class="course-badge"
-          >
-            {{ question.courses.title }}
+          <div class="title-and-badge">
+            <h2 class="question-title-detail">{{ question.title }}</h2>
+            <div
+              v-if="question.courses"
+              class="course-badge"
+            >
+              {{ question.courses.title }}
+            </div>
           </div>
         </div>
+
         <div class="question-content-detail">
           {{ question.content }}
         </div>
@@ -224,19 +352,73 @@ onMounted(async () => {
                 v-for="answer in answers"
                 :key="answer.id"
                 class="answer-item"
-                :class="{ new: answer.isNew }"
+                :class="{
+                  new: answer.isNew,
+                  'user-answer': userId === answer.user_id,
+                }"
               >
-                <div class="answer-content">
-                  {{ answer.content }}
+                <div class="answer-header">
+                  <div class="answer-metadata">
+                    <span class="author">
+                      <strong>Autor:</strong> {{ answer.user?.first_name }}
+                      {{ answer.user?.last_name }}
+                    </span>
+                    <span class="date">
+                      <strong>Data:</strong> {{ formatDate(answer.created_at) }}
+                    </span>
+                  </div>
+                  <div
+                    v-if="canManageAnswer(answer)"
+                    class="manage-answer-buttons"
+                  >
+                    <button
+                      @click="startEditAnswer(answer)"
+                      class="edit-button small"
+                      v-if="userId === answer.user_id"
+                      title="Edytuj"
+                    >
+                      <i class="icon-edit">✏️</i>
+                    </button>
+                    <button
+                      @click="confirmDeleteAnswer(answer.id)"
+                      class="delete-button small"
+                      title="Usuń"
+                    >
+                      <i class="icon-delete">🗑️</i>
+                    </button>
+                  </div>
                 </div>
-                <div class="answer-footer">
-                  <span class="author">
-                    <strong>Autor:</strong> {{ answer.first_name }}
-                    {{ answer.last_name }}
-                  </span>
-                  <span class="date">
-                    <strong>Data:</strong> {{ formatDate(answer.created_at) }}
-                  </span>
+
+                <div
+                  v-if="editingAnswer === answer.id"
+                  class="edit-answer-form"
+                >
+                  <textarea
+                    v-model="editedAnswerContent"
+                    class="form-control"
+                    rows="3"
+                  ></textarea>
+                  <div class="form-actions">
+                    <button
+                      @click="cancelEditAnswer"
+                      class="cancel-button small"
+                    >
+                      Anuluj
+                    </button>
+                    <button
+                      @click="saveEditedAnswer(answer.id)"
+                      class="submit-button small"
+                      :disabled="!editedAnswerContent"
+                    >
+                      Zapisz
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-else
+                  class="answer-content"
+                >
+                  {{ answer.content }}
                 </div>
               </div>
             </div>
@@ -281,6 +463,30 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <div
+      v-if="showConfirmDeleteAnswer"
+      class="confirm-delete-dialog"
+    >
+      <div class="dialog-content">
+        <h3>Potwierdź usunięcie</h3>
+        <p>Czy na pewno chcesz usunąć tę odpowiedź?</p>
+        <div class="dialog-actions">
+          <button
+            @click="showConfirmDeleteAnswer = null"
+            class="cancel-button"
+          >
+            Anuluj
+          </button>
+          <button
+            @click="deleteAnswer(showConfirmDeleteAnswer)"
+            class="delete-dialog-button"
+          >
+            Usuń
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -295,31 +501,32 @@ onMounted(async () => {
 
 .header-section {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   position: relative;
 }
 
 .header-section h1 {
-  font-size: 28px;
-  margin-bottom: 5px;
+  font-size: 32px;
+  margin-bottom: 8px;
   color: #333;
   position: relative;
   display: inline-block;
+  font-weight: 700;
 }
 
 .header-decoration {
-  width: 80px;
-  height: 3px;
+  width: 100px;
+  height: 4px;
   background-color: #eb5757;
-  margin: 0 auto 10px;
+  margin: 0 auto 15px;
   border-radius: 2px;
 }
 
 .content-container {
   background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   position: relative;
 }
 
@@ -380,65 +587,81 @@ onMounted(async () => {
 }
 
 .question-detail {
-  margin-bottom: 30px;
+  margin-bottom: 50px;
 }
 
 .question-header-detail {
-  padding: 15px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
   background-color: #f8f9fa;
   border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title-and-badge {
+  flex: 1;
 }
 
 .question-title-detail {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   word-break: break-word;
+  color: #2c3e50;
+  line-height: 1.3;
 }
 
 .answer-item.new {
   animation: highlightNewAnswer 5s ease-out;
   position: relative;
   border-left: 4px solid #eb5757;
-  background-color: #eb5757;
 }
 
-.answer-item.new .answer-content {
-  background-color: #fffafa;
+@keyframes highlightNewAnswer {
+  0% {
+    background-color: rgba(235, 87, 87, 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .course-badge {
   display: inline-block;
-  margin-top: 8px;
-  background: #f0f0f0;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  margin-top: 10px;
+  background: #eb5757;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(235, 87, 87, 0.2);
 }
 
 .question-content-detail {
-  padding: 25px 20px;
+  padding: 30px 25px;
   color: #333;
-  line-height: 1.6;
+  line-height: 1.8;
   white-space: pre-line;
   background-color: #fefefe;
-  border-left: 4px solid #eb5757;
-  font-size: 15px;
+  border-left: 5px solid #eb5757;
+  font-size: 16px;
   box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin: 15px 0;
+  margin: 20px 0;
   border-radius: 0 8px 8px 0;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .question-footer {
-  padding: 10px 15px;
+  padding: 15px 20px;
   background: #f8f9fa;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #e0e0e0;
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
-  font-size: 12px;
+  gap: 20px;
+  font-size: 14px;
   color: #666;
   border-radius: 0 0 8px 8px;
 }
@@ -447,17 +670,24 @@ onMounted(async () => {
 .date {
   display: flex;
   align-items: center;
+  font-weight: 500;
 }
 
 .answers-section {
-  margin-top: 30px;
+  margin-top: 50px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .section-title {
-  font-size: 18px;
-  margin-bottom: 15px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
+  font-size: 22px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eb5757;
+  color: #2c3e50;
+  font-weight: 700;
 }
 
 .empty-state {
@@ -471,23 +701,52 @@ onMounted(async () => {
 .answers-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 20px;
+  margin-bottom: 25px;
 }
 
 .answer-item {
-  background: #f8f9fa;
+  background: #fff;
   border: 1px solid #eee;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.answer-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+}
+
+.user-answer {
+  border-left: 4px solid #eb5757;
+}
+
+.answer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.answer-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  font-size: 13px;
+  color: #666;
 }
 
 .answer-content {
-  padding: 15px;
+  padding: 20px;
   color: #333;
-  line-height: 1.5;
+  line-height: 1.7;
   white-space: pre-line;
   background-color: white;
+  font-size: 15px;
 }
 
 .answer-footer {
@@ -504,6 +763,7 @@ onMounted(async () => {
 .author strong,
 .date strong {
   color: #444;
+  margin-right: 5px;
 }
 
 .pagination {
@@ -543,54 +803,65 @@ onMounted(async () => {
   font-size: 14px;
   color: #666;
 }
+
 .answer-form {
-  margin-top: 30px;
+  margin-top: 35px;
   background: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
+  padding: 20px;
+  border-radius: 10px;
   border: 1px solid #e9ecef;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .form-title {
-  font-size: 16px;
+  font-size: 18px;
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-weight: 700;
 }
 
 .form-textarea {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  margin-bottom: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
   font-family: inherit;
   resize: vertical;
-  min-height: 100px;
-  transition: border-color 0.2s;
+  min-height: 120px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 15px;
 }
 
 .form-textarea:focus {
   outline: none;
   border-color: #eb5757;
+  box-shadow: 0 0 0 3px rgba(235, 87, 87, 0.2);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .submit-button {
   background-color: #eb5757;
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .submit-button:hover:not(:disabled) {
   background-color: #d64545;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .submit-button:disabled {
@@ -598,7 +869,199 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
-@media (max-width: 600px) {
+.manage-question-buttons,
+.manage-answer-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.delete-dialog-button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  background-color: #e74c3c;
+  color: white;
+}
+
+.delete-dialog-button:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+}
+
+.icon-edit,
+.icon-delete {
+  font-style: normal;
+  font-size: 16px;
+}
+
+.edit-button,
+.delete-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-button {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.edit-button:hover {
+  background-color: #3a80d2;
+  transform: translateY(-2px);
+}
+
+.delete-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+}
+
+.small {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+.cancel-button {
+  background-color: #999;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-right: 10px;
+}
+
+.cancel-button:hover {
+  background-color: #777;
+  transform: translateY(-2px);
+}
+
+.cancel-button.small {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+.edit-answer-form {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 5px;
+  margin: 0;
+  border: none;
+}
+
+.edit-answer-form textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  font-family: inherit;
+  margin-bottom: 10px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.confirm-delete-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-content h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+.dialog-content p {
+  margin-bottom: 20px;
+  line-height: 1.6;
+  color: #555;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .question-header-detail {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .manage-question-buttons {
+    margin-top: 10px;
+    align-self: flex-end;
+  }
+
+  .answer-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .answer-metadata,
+  .manage-answer-buttons {
+    width: 100%;
+  }
+
+  .manage-answer-buttons {
+    margin-top: 10px;
+    justify-content: flex-end;
+  }
+
   .question-footer,
   .answer-footer {
     flex-direction: column;

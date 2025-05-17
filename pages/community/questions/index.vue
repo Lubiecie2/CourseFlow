@@ -19,6 +19,14 @@ const totalPages = ref(1);
 const totalQuestions = ref(0);
 const questionsPerPage = 10;
 const { $socket } = useNuxtApp();
+const userStore = useUserStore();
+const userId = computed(() => userStore?.user?.id);
+const isAdmin = computed(() => userStore?.user?.role_id === 1);
+const showConfirmDeleteQuestion = ref(null);
+const editingQuestion = ref(null);
+const editedQuestionTitle = ref("");
+const editedQuestionContent = ref("");
+const editedQuestionCourseId = ref(null);
 
 // ------ Inicjalizacja WebSocketa -------------------------------
 
@@ -47,6 +55,49 @@ const initializeSocketConnection = () => {
       ) {
         totalPages.value++;
       }
+    }
+  });
+
+  $socket.on("question-updated", (updatedQuestion) => {
+    const questionId =
+      typeof updatedQuestion.id === "string"
+        ? parseInt(updatedQuestion.id)
+        : updatedQuestion.id;
+
+    const index = questions.value.findIndex((q) => q.id === questionId);
+    if (index !== -1) {
+      const oldQuestion = questions.value[index];
+
+      questions.value[index] = {
+        ...oldQuestion,
+        ...updatedQuestion,
+      };
+
+      if (updatedQuestion.course_id !== oldQuestion.course_id) {
+        if (updatedQuestion.course_id) {
+          const course = courses.value.find(
+            (c) => c.id === updatedQuestion.course_id
+          );
+          if (course) {
+            questions.value[index].courses = {
+              id: course.id,
+              title: course.title,
+            };
+          }
+        } else {
+          questions.value[index].courses = null;
+        }
+      }
+    }
+  });
+
+  $socket.on("question-removed", (removedQuestionId) => {
+    questions.value = questions.value.filter(
+      (q) => q.id !== parseInt(removedQuestionId)
+    );
+    totalQuestions.value--;
+    if (questions.value.length === 0 && currentPage.value > 1) {
+      goToPage(currentPage.value - 1);
     }
   });
 };
@@ -145,6 +196,123 @@ const addQuestion = async () => {
   }
 };
 
+// ------ Usuwanie pytania --------------------------------------
+
+const confirmDeleteQuestion = (question, event) => {
+  if (event) event.stopPropagation();
+  showConfirmDeleteQuestion.value = question;
+};
+
+const cancelDelete = () => {
+  showConfirmDeleteQuestion.value = null;
+};
+
+const deleteQuestion = async () => {
+  try {
+    const response = await useApiFrontend(
+      `questions/${showConfirmDeleteQuestion.value.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    if (response && response.success) {
+      questions.value = questions.value.filter(
+        (q) => q.id !== showConfirmDeleteQuestion.value.id
+      );
+      totalQuestions.value--;
+      if (questions.value.length === 0 && currentPage.value > 1) {
+        goToPage(currentPage.value - 1);
+      }
+      if ($socket && $socket.connected) {
+        $socket.emit("question-deleted", showConfirmDeleteQuestion.value.id);
+      }
+    }
+  } catch (err) {
+    console.error("Błąd podczas usuwania pytania:", err);
+  } finally {
+    showConfirmDeleteQuestion.value = null;
+  }
+};
+
+// ------ Edycja pytania ----------------------------------------
+
+const startEditQuestion = (question, event) => {
+  if (event) event.stopPropagation();
+  editingQuestion.value = question.id;
+  editedQuestionTitle.value = question.title;
+  editedQuestionContent.value = question.content;
+  editedQuestionCourseId.value = question.course_id || null;
+};
+
+const cancelEditQuestion = (event) => {
+  if (event) event.stopPropagation();
+  editingQuestion.value = null;
+};
+
+const saveEditedQuestion = async (event) => {
+  if (event) event.stopPropagation();
+
+  try {
+    if (!editedQuestionTitle.value || !editedQuestionContent.value) return;
+
+    const response = await useApiFrontend(
+      `questions/${editingQuestion.value}`,
+      {
+        method: "PATCH",
+        body: {
+          title: editedQuestionTitle.value,
+          content: editedQuestionContent.value,
+          courseId: editedQuestionCourseId.value,
+        },
+      }
+    );
+
+    if (response && response.success) {
+      const index = questions.value.findIndex(
+        (q) => q.id === editingQuestion.value
+      );
+      if (index !== -1) {
+        questions.value[index].title = editedQuestionTitle.value;
+        questions.value[index].content = editedQuestionContent.value;
+        questions.value[index].course_id = editedQuestionCourseId.value;
+
+        if (editedQuestionCourseId.value) {
+          const course = courses.value.find(
+            (c) => c.id === editedQuestionCourseId.value
+          );
+          if (course) {
+            questions.value[index].courses = {
+              id: course.id,
+              title: course.title,
+            };
+          }
+        } else {
+          questions.value[index].courses = null;
+        }
+      }
+      if ($socket && $socket.connected) {
+        $socket.emit("question-edited", {
+          id: editingQuestion.value,
+          title: editedQuestionTitle.value,
+          content: editedQuestionContent.value,
+          course_id: editedQuestionCourseId.value,
+          updated_at: new Date(),
+        });
+      }
+      editingQuestion.value = null;
+    }
+  } catch (err) {
+    console.error("Błąd podczas edycji pytania:", err);
+  }
+};
+
+// ------ Sprawdzanie uprawnień -----------------------------------
+
+const canManageQuestion = (question) => {
+  return userId.value === question.user_id || isAdmin.value;
+};
+
 // ------ Zmiana strony ------------------------------------------------
 
 const goToPage = (page) => {
@@ -182,6 +350,8 @@ onBeforeUnmount(() => {
   if ($socket && $socket.connected) {
     $socket.emit("leave-questions-list");
     $socket.off("new-question");
+    $socket.off("question-updated");
+    $socket.off("question-removed");
     $socket.disconnect();
   }
 });
@@ -299,37 +469,117 @@ onMounted(() => {
         <div
           v-for="question in filteredQuestions"
           :key="question.id"
-          @click="viewQuestion(question.id)"
           class="question-item"
-          :class="{ new: question.isNew }"
+          :class="{
+            new: question.isNew,
+            editing: editingQuestion === question.id,
+          }"
         >
-          <div class="question-header">
-            <h3 class="question-title">{{ question.title }}</h3>
-            <div
-              v-if="question.courses"
-              class="course-badge"
+          <div
+            v-if="editingQuestion === question.id"
+            class="question-edit-form"
+            @click.stop
+          >
+            <h3>Edycja pytania</h3>
+            <input
+              v-model="editedQuestionTitle"
+              placeholder="Tytuł pytania"
+              class="form-input"
+            />
+            <textarea
+              v-model="editedQuestionContent"
+              placeholder="Treść pytania"
+              rows="4"
+              class="form-textarea"
+            ></textarea>
+            <select
+              v-model="editedQuestionCourseId"
+              class="form-select"
             >
-              {{ question.courses.title }}
+              <option :value="null">
+                Pytanie ogólne (bez przypisania do kursu)
+              </option>
+              <option
+                v-for="course in courses"
+                :key="course.id"
+                :value="course.id"
+              >
+                Pytanie do kursu: {{ course.title }}
+              </option>
+            </select>
+            <div class="form-actions">
+              <button
+                @click="cancelEditQuestion"
+                class="cancel-button"
+              >
+                Anuluj
+              </button>
+              <button
+                @click="saveEditedQuestion"
+                class="submit-button"
+                :disabled="!editedQuestionTitle || !editedQuestionContent"
+              >
+                Zapisz zmiany
+              </button>
             </div>
           </div>
 
-          <div class="question-content">
-            {{ question.content.substring(0, 150)
-            }}{{ question.content.length > 150 ? "..." : "" }}
-          </div>
+          <template v-else>
+            <div class="question-header">
+              <h3
+                class="question-title"
+                @click="viewQuestion(question.id)"
+              >
+                {{ question.title }}
+              </h3>
+              <div
+                v-if="question.courses"
+                class="course-badge"
+              >
+                {{ question.courses.title }}
+              </div>
 
-          <div class="question-footer">
-            <span class="author">
-              Autor: {{ question.users?.first_name }}
-              {{ question.users?.last_name }}
-            </span>
-            <span class="date">
-              Data: {{ formatDate(question.created_at) }}
-            </span>
-            <span class="answers-count">
-              Odpowiedzi: {{ question._count?.course_answers || 0 }}
-            </span>
-          </div>
+              <div
+                v-if="canManageQuestion(question)"
+                class="question-actions"
+              >
+                <button
+                  @click="startEditQuestion(question, $event)"
+                  class="edit-button small"
+                  title="Edytuj pytanie"
+                  v-if="userId === question.user_id"
+                >
+                  <i class="icon-edit">✏️</i>
+                </button>
+                <button
+                  @click="confirmDeleteQuestion(question, $event)"
+                  class="delete-button small"
+                  title="Usuń pytanie"
+                >
+                  <i class="icon-delete">🗑️</i>
+                </button>
+              </div>
+            </div>
+            <div
+              class="question-content"
+              @click="viewQuestion(question.id)"
+            >
+              {{ question.content.substring(0, 150)
+              }}{{ question.content.length > 150 ? "..." : "" }}
+            </div>
+            <div class="question-footer">
+              <span class="author">
+                Autor: {{ question.users?.first_name }}
+                {{ question.users?.last_name }}
+              </span>
+              <span class="date">
+                Data: {{ formatDate(question.created_at) }}
+              </span>
+              <span class="answers-count">
+                Odpowiedzi: {{ question._count?.course_answers || 0 }}
+              </span>
+            </div>
+          </template>
         </div>
       </div>
       <div
@@ -353,6 +603,34 @@ onMounted(() => {
         >
           Następna &raquo;
         </button>
+      </div>
+    </div>
+
+    <div
+      v-if="showConfirmDeleteQuestion"
+      class="confirm-delete-dialog"
+    >
+      <div class="dialog-content">
+        <h3>Potwierdź usunięcie</h3>
+        <p>
+          Czy na pewno chcesz usunąć pytanie "{{
+            showConfirmDeleteQuestion.title
+          }}" wraz ze wszystkimi odpowiedziami?
+        </p>
+        <div class="dialog-actions">
+          <button
+            @click="cancelDelete"
+            class="cancel-button"
+          >
+            Anuluj
+          </button>
+          <button
+            @click="deleteQuestion"
+            class="delete-dialog-button"
+          >
+            Usuń
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -571,6 +849,7 @@ onMounted(() => {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .course-badge {
@@ -587,12 +866,115 @@ onMounted(() => {
   padding: 12px 15px;
   color: #555;
   line-height: 1.4;
+  cursor: pointer;
 }
 
 .question-item.new {
   animation: highlightNewQuestion 2s ease-out;
   position: relative;
   border-left: 4px solid #eb5757;
+}
+
+.question-item.editing {
+  cursor: default;
+}
+
+.question-item.editing:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-button {
+  background: none;
+  border: 1px solid;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.icon-edit,
+.icon-delete {
+  font-style: normal;
+  font-size: 16px;
+}
+
+.question-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 5px;
+  z-index: 2;
+}
+
+.edit-button,
+.delete-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-button {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.edit-button:hover {
+  background-color: #3a80d2;
+  transform: translateY(-2px);
+}
+
+.delete-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.delete-dialog-button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.delete-dialog-button {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.delete-dialog-button:hover {
+  background-color: #d73c2c;
+}
+
+.question-edit-form {
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.question-edit-form h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
 }
 
 @keyframes highlightNewQuestion {
@@ -680,6 +1062,68 @@ onMounted(() => {
   align-items: center;
 }
 
+.confirm-delete-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+}
+
+.dialog-content h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-button {
+  background-color: #999;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-right: 10px;
+}
+
+.cancel-button:hover {
+  background-color: #888;
+}
+
+.delete-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+}
+
 @media (max-width: 600px) {
   .filters-section {
     flex-direction: column;
@@ -694,6 +1138,12 @@ onMounted(() => {
   .question-footer {
     flex-direction: column;
     gap: 5px;
+  }
+
+  .question-actions {
+    position: static;
+    margin-top: 10px;
+    justify-content: flex-end;
   }
 }
 </style>
