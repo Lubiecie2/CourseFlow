@@ -402,7 +402,7 @@ const { logout } = userStore;
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1300px) {
   .nav-button-container {
     display: none;
   }

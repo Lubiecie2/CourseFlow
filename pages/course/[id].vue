@@ -84,19 +84,23 @@ onMounted(async () => {
 const checkChapterTestsStatus = async () => {
   try {
     for (const chapter of chapters.value) {
-      const testsResponse = await useApiServer(
+      const testsResponse = await useApiFrontend(
         `chapterTest/${courseId}/chapters/${chapter.id}/tests`
       );
 
-      if (testsResponse?.tests?.length > 0) {
-        let chapterPassed = false;
+      let chapterPassed = false;
 
+      if (testsResponse?.tests?.length > 0) {
         for (const test of testsResponse.tests) {
           const attemptsResponse = await useApiFrontend(
             `userTest/${test.id}/attempts`
           );
 
-          if (attemptsResponse && attemptsResponse.attempts) {
+          if (
+            attemptsResponse &&
+            attemptsResponse.attempts &&
+            attemptsResponse.attempts.length > 0
+          ) {
             const passedAttempt = attemptsResponse.attempts.find(
               (a) => a.passed
             );
@@ -106,12 +110,17 @@ const checkChapterTestsStatus = async () => {
             }
           }
         }
-
-        chapterTestsStatus.value[chapter.id] = chapterPassed;
-      } else {
-        chapterTestsStatus.value[chapter.id] = true;
       }
+
+      chapterTestsStatus.value[chapter.id] = chapterPassed;
+
+      localStorage.setItem(
+        `chapter_status_${courseId}_${chapter.id}`,
+        chapterPassed ? "passed" : "not_passed"
+      );
     }
+
+    console.log("Statusy rozdziałów:", chapterTestsStatus.value);
   } catch (err) {
     console.error("Błąd podczas sprawdzania statusu testów:", err);
   }

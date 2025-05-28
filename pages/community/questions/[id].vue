@@ -523,11 +523,9 @@ onMounted(async () => {
 }
 
 .content-container {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .back-link {
@@ -955,6 +953,26 @@ onMounted(async () => {
 .cancel-button.small {
   font-size: 12px;
   padding: 5px 10px;
+}
+
+.submit-button.small,
+.cancel-button.small {
+  height: 30px;
+  box-sizing: border-box;
+  font-size: 12px;
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-button.small,
+.delete-button.small {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  font-size: 12px;
 }
 
 .edit-answer-form {

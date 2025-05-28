@@ -202,7 +202,7 @@ onMounted(fetchCertificates);
   max-width: 1200px;
   margin: 40px auto;
   padding: 0 20px;
-  min-height: 600px;
+  min-height: 700px;
 }
 
 h2 {

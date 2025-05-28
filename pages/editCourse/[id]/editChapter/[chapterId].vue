@@ -573,6 +573,29 @@
   background-color: #f1f1f1;
   border-radius: 3px;
 }
+
+.code-input {
+  margin-bottom: 15px;
+}
+
+.code-language-selector {
+  margin-bottom: 10px;
+}
+
+.code-textarea {
+  font-family: monospace;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.editable-element pre {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: "Courier New", Courier, monospace;
+}
 .image-container.text-center,
 .video-container.text-center {
   margin-left: auto;
@@ -1054,6 +1077,53 @@
           placeholder="Podpis pod filmem (opcjonalnie)"
         />
       </div>
+      <div
+        v-if="contentType === 'code'"
+        class="code-input"
+      >
+        <div class="code-language-selector">
+          <label for="code-language">Język programowania:</label>
+          <select
+            id="code-language"
+            v-model="codeLanguage"
+            class="text-input"
+          >
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="csharp">C#</option>
+            <option value="cpp">C++</option>
+            <option value="java">Java</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="sql">SQL</option>
+            <option value="bash">Bash</option>
+            <option value="typescript">TypeScript</option>
+            <option value="php">PHP</option>
+          </select>
+        </div>
+
+        <div class="code-options">
+          <label class="checkbox-container">
+            <input
+              type="checkbox"
+              v-model="showLineNumbers"
+            />
+            <span class="checkbox-label">Pokaż numerację linii</span>
+          </label>
+        </div>
+
+        <textarea
+          v-model="codeContent"
+          class="text-input code-textarea"
+          placeholder="Wpisz kod tutaj"
+          rows="10"
+        ></textarea>
+        <input
+          v-model="codeCaption"
+          class="text-input"
+          placeholder="Podpis pod kodem (opcjonalnie)"
+        />
+      </div>
       <div class="actions-row">
         <button
           class="btn-primary"
@@ -1071,7 +1141,7 @@
 
 // ------ Importy -------------------------------------------------
 
-import { NodeHeading, NodeParagraph,  NodeList, NodeImage, NodeVideo } from "#components";
+import { NodeHeading, NodeParagraph,  NodeList, NodeImage, NodeVideo, NodeCode } from "#components";
 import { ref, shallowRef, nextTick } from "vue";
 import draggable from 'vuedraggable';
 
@@ -1098,6 +1168,10 @@ const selectedVideo = ref(null);
 const videoCaption = ref("");
 const uploadVideoProgress = ref(0);
 const uploadedVideoUrl = ref("");
+const codeContent = ref("");
+const codeLanguage = ref("javascript");
+const codeCaption = ref("");
+const showLineNumbers = ref(false);
 
 // ------ Wybieranie komponentów ----------------------------------
 
@@ -1107,6 +1181,7 @@ const options = ref([
   { value: "list", label: "Lista" },
   { value: "image", label: "Zdjęcie" },
   { value: "video", label: "Film" },
+  { value: "code", label: "Kod" }
 ]);
 
 const getComponent = (type) => {
@@ -1121,6 +1196,8 @@ const getComponent = (type) => {
       return NodeImage;
     case "video":
       return NodeVideo;
+    case "code":
+      return NodeCode;
     default:
       return NodeParagraph;
   }
@@ -1425,6 +1502,22 @@ const add = () => {
     videoCaption.value = '';
     uploadedVideoUrl.value = '';
     uploadVideoProgress.value = 0;
+  } else if (contentType.value === 'code') {
+    if (!codeContent.value.trim()) {
+      alert('Wprowadź kod przed dodaniem bloku');
+      return;
+    }
+
+    newItem.params = {
+      content: codeContent.value,
+      language: codeLanguage.value,
+      caption: codeCaption.value,
+      showLineNumbers: showLineNumbers.value,
+      format: [],
+    };
+
+    codeContent.value = "";
+    codeCaption.value = "";
   } else {
     newItem.params = {
       content: text.value,
@@ -1453,7 +1546,25 @@ const updateContent = (event, index) => {
   const target = event.target;
   const item = content.value[index];
 
-  if (item.type === 'list') {
+  if (!item) return;
+
+  if (item.type === 'code') {
+
+    const codeElement = target.querySelector('code');
+    if (codeElement) {
+
+      item.params.content = codeElement.textContent;
+    } else {
+
+      const lines = target.innerText.split('\n');
+
+      if (item.params.caption && lines.length > 1 &&
+          lines[lines.length - 1].includes(item.params.caption)) {
+        lines.pop();
+      }
+      item.params.content = lines.join('\n');
+    }
+  } else if (item.type === 'list') {
     const listElements = [];
     const listItems = target.querySelectorAll('li');
 

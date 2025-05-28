@@ -47,62 +47,64 @@ onMounted(checkUserCourses);
 
 <template>
   <UserNavbar></UserNavbar>
-  <h2>Moje kursy</h2>
-  <div
-    v-if="isLoading"
-    class="loading-state"
-  >
-    <div class="spinner"></div>
-    <p>Wczytywanie kursów...</p>
-  </div>
-
-  <div
-    v-else-if="error"
-    class="error-state"
-  >
-    <p>{{ error }}</p>
-    <button
-      @click="checkUserCourses"
-      class="retry-btn"
+  <div class="c">
+    <h2>Moje kursy</h2>
+    <div
+      v-if="isLoading"
+      class="loading-state"
     >
-      Spróbuj ponownie
-    </button>
-  </div>
+      <div class="spinner"></div>
+      <p>Wczytywanie kursów...</p>
+    </div>
 
-  <div
-    v-else-if="courses.length === 0"
-    class="empty-state"
-  >
-    <div class="empty-icon">🔍</div>
-    <h3>Nie masz jeszcze żadnych kursów</h3>
-    <p>Zapisz się na kursy, aby rozpocząć naukę.</p>
-    <NuxtLink
-      to="/courses"
-      class="browse-courses-btn"
+    <div
+      v-else-if="error"
+      class="error-state"
     >
-      Przeglądaj kursy
-    </NuxtLink>
-  </div>
+      <p>{{ error }}</p>
+      <button
+        @click="checkUserCourses"
+        class="retry-btn"
+      >
+        Spróbuj ponownie
+      </button>
+    </div>
 
-  <courseCardList
-    v-else
-    userCoursesOnly
-  ></courseCardList>
-
-  <div class="navigation-buttons">
-    <button
-      @click="goToProfile"
-      class="red-button"
+    <div
+      v-else-if="courses.length === 0"
+      class="empty-state"
     >
-      Powrót do profilu
-    </button>
+      <div class="empty-icon">🔍</div>
+      <h3>Nie masz jeszcze żadnych kursów</h3>
+      <p>Zapisz się na kursy, aby rozpocząć naukę.</p>
+      <NuxtLink
+        to="/courses"
+        class="browse-courses-btn"
+      >
+        Przeglądaj kursy
+      </NuxtLink>
+    </div>
 
-    <button
-      @click="goToBadges"
-      class="red-button"
-    >
-      Odznaki i certyfikaty
-    </button>
+    <courseCardList
+      v-else
+      userCoursesOnly
+    ></courseCardList>
+
+    <div class="navigation-buttons">
+      <button
+        @click="goToProfile"
+        class="red-button"
+      >
+        Powrót do profilu
+      </button>
+
+      <button
+        @click="goToBadges"
+        class="red-button"
+      >
+        Odznaki i certyfikaty
+      </button>
+    </div>
   </div>
   <foter></foter>
 </template>
@@ -113,6 +115,10 @@ h2 {
   font-size: 50px;
   margin-bottom: 16px;
   color: #333;
+}
+
+.c {
+  min-height: 900px;
 }
 
 .navigation-buttons {

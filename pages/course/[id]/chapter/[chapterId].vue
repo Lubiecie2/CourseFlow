@@ -11,6 +11,7 @@ import {
   NodeList,
   NodeImage,
   NodeVideo,
+  NodeCode,
 } from "#components";
 
 const route = useRoute();
@@ -38,6 +39,8 @@ const getComponent = (type) => {
       return NodeImage;
     case "video":
       return NodeVideo;
+    case "code":
+      return NodeCode;
     default:
       return NodeParagraph;
   }
@@ -256,18 +259,29 @@ const goBackToCourse = () => {
 
 <style scoped>
 .chapter-container {
-  padding: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 30px;
   background-color: white;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.main-content {
+  background-color: white;
+  padding: 40px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
 }
 
 .chapter-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e9ecef;
+  margin-bottom: 30px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+  color: #333;
 }
 
 .chapter-content {
@@ -307,10 +321,89 @@ const goBackToCourse = () => {
 .empty-content {
   padding: 20px;
   background-color: #f8f9fa;
-  border-left: 4px solid #eb5757;
-  border-radius: 4px;
+  border-radius: 8px;
   color: #6c757d;
   margin: 20px 0;
+  text-align: center;
+}
+
+/* Zachowanie pozostałych styli bez zmian */
+.code-block {
+  margin: 1rem 0;
+  position: relative;
+}
+
+.code-container {
+  position: relative;
+  display: flex;
+}
+
+.code-container pre {
+  margin: 0;
+  flex-grow: 1;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: "Courier New", Courier, monospace;
+  white-space: pre;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.with-line-numbers pre {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+}
+
+.line-numbers {
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-right: none;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  padding: 1rem 0.5rem;
+  text-align: right;
+  user-select: none;
+  color: #888;
+  font-size: 0.8rem;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.5;
+  min-width: 2.5rem;
+}
+
+.line-number {
+  height: 1.5em;
+}
+
+.code-caption {
+  font-style: italic;
+  color: #666;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.language-javascript,
+.language-python,
+.language-java,
+.language-csharp,
+.language-cpp,
+.language-html,
+.language-css,
+.language-sql,
+.language-typescript,
+.language-php,
+.language-bash {
+  color: #333;
+}
+
+.content-block {
+  margin-bottom: 1.5rem;
 }
 
 .chapter-actions {
@@ -334,119 +427,7 @@ const goBackToCourse = () => {
   background-color: #d63031;
 }
 
-.font-bold {
-  font-weight: bold;
-}
-
-.italic {
-  font-style: italic;
-}
-
-.underline {
-  text-decoration: underline;
-}
-
-.text-xs {
-  font-size: 0.75rem;
-}
-
-.text-sm {
-  font-size: 1rem;
-}
-
-.text-base {
-  font-size: 1.125rem;
-}
-
-.text-lg {
-  font-size: 1.25rem;
-}
-
-.text-xl {
-  font-size: 1.5rem;
-}
-
-.text-2xl {
-  font-size: 2rem;
-}
-
-.text-red {
-  color: #dc3545;
-}
-
-.text-blue {
-  color: #0066cc;
-}
-
-.text-green {
-  color: #28a745;
-}
-
-.text-orange {
-  color: #fd7e14;
-}
-
-.text-purple {
-  color: #6f42c1;
-}
-
-.text-teal {
-  color: #20c997;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.text-right {
-  text-align: right;
-}
-.image-sm {
-  max-width: 25%;
-}
-
-.image-md {
-  max-width: 50%;
-}
-
-.image-lg {
-  max-width: 75%;
-}
-
-.image-full {
-  width: 100%;
-}
-
-.video-sm {
-  max-width: 25%;
-}
-
-.video-md {
-  max-width: 50%;
-}
-
-.video-lg {
-  max-width: 75%;
-}
-
-.video-full {
-  width: 100%;
-}
-
-.image-container.text-center,
-.video-container.text-center {
-  margin-left: auto;
-  margin-right: auto;
-  display: block;
-}
-
-.image-container.text-right,
-.video-container.text-right {
-  margin-left: auto;
-  margin-right: 0;
-  display: block;
-}
-
+/* Pozostałe style dla testów */
 .tests-section {
   margin-top: 40px;
   padding-top: 20px;
@@ -489,7 +470,7 @@ const goBackToCourse = () => {
   background-color: #f8f9fa;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
 }
@@ -547,5 +528,96 @@ const goBackToCourse = () => {
   .tests-list {
     grid-template-columns: 1fr;
   }
+}
+
+/* Style dla formatowania tekstu i obrazów zostają bez zmian */
+.font-bold {
+  font-weight: bold;
+}
+.italic {
+  font-style: italic;
+}
+.underline {
+  text-decoration: underline;
+}
+.text-xs {
+  font-size: 0.75rem;
+}
+.text-sm {
+  font-size: 1rem;
+}
+.text-base {
+  font-size: 1.125rem;
+}
+.text-lg {
+  font-size: 1.25rem;
+}
+.text-xl {
+  font-size: 1.5rem;
+}
+.text-2xl {
+  font-size: 2rem;
+}
+.text-red {
+  color: #dc3545;
+}
+.text-blue {
+  color: #0066cc;
+}
+.text-green {
+  color: #28a745;
+}
+.text-orange {
+  color: #fd7e14;
+}
+.text-purple {
+  color: #6f42c1;
+}
+.text-teal {
+  color: #20c997;
+}
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}
+.image-sm {
+  max-width: 25%;
+}
+.image-md {
+  max-width: 50%;
+}
+.image-lg {
+  max-width: 75%;
+}
+.image-full {
+  width: 100%;
+}
+.video-sm {
+  max-width: 25%;
+}
+.video-md {
+  max-width: 50%;
+}
+.video-lg {
+  max-width: 75%;
+}
+.video-full {
+  width: 100%;
+}
+
+.image-container.text-center,
+.video-container.text-center {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+.image-container.text-right,
+.video-container.text-right {
+  margin-left: auto;
+  margin-right: 0;
+  display: block;
 }
 </style>
