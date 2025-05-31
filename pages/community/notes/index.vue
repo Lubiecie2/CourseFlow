@@ -6,27 +6,30 @@ definePageMeta({
 
 // ------ Zmienne -------------------------------------------------
 
-const questions = ref([]);
+const notes = ref([]);
 const loading = ref(true);
 const courses = ref([]);
-const newQuestion = ref({ title: "", content: "", courseId: null });
+const newNote = ref({ title: "", content: "", courseId: null, file: null });
 const showForm = ref(false);
 const error = ref(null);
 const selectedCourseFilter = ref(null);
-const showOnlyGeneral = ref(false);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const totalQuestions = ref(0);
-const questionsPerPage = 10;
+const totalNotes = ref(0);
+const notesPerPage = 10;
 const { $socket } = useNuxtApp();
 const userStore = useUserStore();
 const userId = computed(() => userStore?.user?.id);
 const isAdmin = computed(() => userStore?.user?.role_id === 1);
-const showConfirmDeleteQuestion = ref(null);
-const editingQuestion = ref(null);
-const editedQuestionTitle = ref("");
-const editedQuestionContent = ref("");
-const editedQuestionCourseId = ref(null);
+const showConfirmDeleteNote = ref(null);
+const editingNote = ref(null);
+const editedNoteTitle = ref("");
+const editedNoteContent = ref("");
+const editedNoteCourseId = ref(null);
+const editedNoteFile = ref(null);
+const selectedFile = ref(null);
+const previewImageUrl = ref(null);
+const editPreviewImageUrl = ref(null);
 
 // ------ Inicjalizacja WebSocketa -------------------------------
 
@@ -35,124 +38,97 @@ const initializeSocketConnection = () => {
     $socket.connect();
   }
 
-  $socket.emit("join-questions-list");
+  $socket.emit("join-notes-list");
 
-  $socket.on("new-question", (question) => {
-    if (!questions.value.some((q) => q.id === question.id)) {
-      question.isNew = true;
-      questions.value.unshift(question);
-      totalQuestions.value++;
+  $socket.on("new-note", (note) => {
+    if (!notes.value.some((n) => n.id === note.id)) {
+      note.isNew = true;
+      notes.value.unshift(note);
+      totalNotes.value++;
 
       setTimeout(() => {
-        const index = questions.value.findIndex((q) => q.id === question.id);
+        const index = notes.value.findIndex((n) => n.id === note.id);
         if (index !== -1) {
-          questions.value[index].isNew = false;
+          notes.value[index].isNew = false;
         }
       }, 15000);
 
-      if (
-        Math.ceil(totalQuestions.value / questionsPerPage) > totalPages.value
-      ) {
+      if (Math.ceil(totalNotes.value / notesPerPage) > totalPages.value) {
         totalPages.value++;
       }
     }
   });
 
-  $socket.on("question-updated", (updatedQuestion) => {
-    const questionId =
-      typeof updatedQuestion.id === "string"
-        ? parseInt(updatedQuestion.id)
-        : updatedQuestion.id;
+  $socket.on("note-updated", (updatedNote) => {
+    const noteId =
+      typeof updatedNote.id === "string"
+        ? parseInt(updatedNote.id)
+        : updatedNote.id;
 
-    const index = questions.value.findIndex((q) => q.id === questionId);
+    const index = notes.value.findIndex((n) => n.id === noteId);
     if (index !== -1) {
-      const oldQuestion = questions.value[index];
+      const oldNote = notes.value[index];
 
-      questions.value[index] = {
-        ...oldQuestion,
-        ...updatedQuestion,
+      notes.value[index] = {
+        ...oldNote,
+        ...updatedNote,
       };
-
-      if (updatedQuestion.course_id !== oldQuestion.course_id) {
-        if (updatedQuestion.course_id) {
-          const course = courses.value.find(
-            (c) => c.id === updatedQuestion.course_id
-          );
-          if (course) {
-            questions.value[index].courses = {
-              id: course.id,
-              title: course.title,
-            };
-          }
-        } else {
-          questions.value[index].courses = null;
-        }
-      }
     }
   });
 
-  $socket.on("question-removed", (removedQuestionId) => {
-    questions.value = questions.value.filter(
-      (q) => q.id !== parseInt(removedQuestionId)
-    );
-    totalQuestions.value--;
-    if (questions.value.length === 0 && currentPage.value > 1) {
+  $socket.on("note-removed", (removedNoteId) => {
+    notes.value = notes.value.filter((n) => n.id !== parseInt(removedNoteId));
+    totalNotes.value--;
+    if (notes.value.length === 0 && currentPage.value > 1) {
       goToPage(currentPage.value - 1);
     }
   });
 };
 
-// ------ Filtrowanie pytań -----------------------------------------
+// ------ Filtrowanie notatek -----------------------------------------
 
-const filteredQuestions = computed(() => {
-  if (!questions.value.length) return [];
+const filteredNotes = computed(() => {
+  if (!notes.value.length) return [];
 
   if (selectedCourseFilter.value) {
-    return questions.value.filter(
-      (q) => q.course_id === selectedCourseFilter.value
+    return notes.value.filter(
+      (n) => n.course_id === selectedCourseFilter.value
     );
   }
 
-  if (showOnlyGeneral.value) {
-    return questions.value.filter((q) => !q.course_id);
-  }
-
-  return questions.value;
+  return notes.value;
 });
 
-// ------ Pobieranie pytań ------------------------------------------
+// ------ Pobieranie notatek ------------------------------------------
 
-const fetchQuestions = async (page = 1) => {
+const fetchNotes = async (page = 1) => {
   try {
     loading.value = true;
     error.value = null;
 
-    let url = `questions?page=${page}&limit=${questionsPerPage}`;
+    let url = `notes?page=${page}&limit=${notesPerPage}`;
 
     if (selectedCourseFilter.value) {
       url += `&courseId=${selectedCourseFilter.value}`;
-    } else if (showOnlyGeneral.value) {
-      url += "&general=true";
     }
 
     const response = await useApiFrontend(url);
 
     if (response && response.success) {
-      questions.value = response.questions || [];
+      notes.value = response.notes || [];
 
       if (response.pagination) {
         totalPages.value = response.pagination.totalPages || 1;
         currentPage.value = page;
-        totalQuestions.value =
-          response.pagination.total || questions.value.length;
+        totalNotes.value = response.pagination.total || notes.value.length;
       }
     } else {
-      throw new Error("Nie udało się pobrać pytań");
+      throw new Error("Nie udało się pobrać notatek");
     }
   } catch (err) {
-    console.error("Błąd podczas pobierania pytań:", err);
+    console.error("Błąd podczas pobierania notatek:", err);
     error.value =
-      "Wystąpił problem podczas ładowania pytań. Spróbuj odświeżyć stronę.";
+      "Wystąpił problem podczas ładowania notatek. Spróbuj odświeżyć stronę.";
   } finally {
     loading.value = false;
   }
@@ -171,146 +147,180 @@ const fetchCourses = async () => {
   }
 };
 
-// ------ Dodawanie nowego pytania -------------------------------------
+const handleFileChange = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    newNote.value.file = file;
+    selectedFile.value = file.name;
 
-const addQuestion = async () => {
-  if (!newQuestion.value.title || !newQuestion.value.content) return;
-
-  try {
-    const response = await useApiFrontend("questions", {
-      method: "POST",
-      body: {
-        title: newQuestion.value.title,
-        content: newQuestion.value.content,
-        courseId: newQuestion.value.courseId || null,
-      },
-    });
-
-    if (response && response.success) {
-      newQuestion.value = { title: "", content: "", courseId: null };
-      showForm.value = false;
-      fetchQuestions();
+    if (file.type.match(/^image\//)) {
+      previewImageUrl.value = URL.createObjectURL(file);
+    } else {
+      previewImageUrl.value = null;
     }
-  } catch (err) {
-    console.error("Błąd podczas dodawania pytania:", err);
   }
 };
 
-// ------ Usuwanie pytania --------------------------------------
+const handleEditFileChange = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    editedNoteFile.value = file;
 
-const confirmDeleteQuestion = (question, event) => {
+    if (file.type.match(/^image\//)) {
+      editPreviewImageUrl.value = URL.createObjectURL(file);
+    } else {
+      editPreviewImageUrl.value = null;
+    }
+  }
+};
+
+// ------ Dodawanie nowej notatki -------------------------------------
+
+const addNote = async () => {
+  if (!newNote.value.title || !newNote.value.content) return;
+
+  try {
+    const formData = new FormData();
+    formData.append("title", newNote.value.title);
+    formData.append("content", newNote.value.content);
+    formData.append("courseId", newNote.value.courseId || "");
+
+    if (newNote.value.file) {
+      formData.append("document", newNote.value.file);
+    }
+
+    const response = await useApiFrontend("notes", {
+      method: "POST",
+      body: formData,
+      headers: {},
+    });
+
+    if (response && response.success) {
+      newNote.value = { title: "", content: "", courseId: null, file: null };
+      selectedFile.value = null;
+      previewImageUrl.value = null;
+      showForm.value = false;
+      fetchNotes();
+    }
+  } catch (err) {
+    console.error("Błąd podczas dodawania notatki:", err);
+  }
+};
+
+// ------ Usuwanie notatki --------------------------------------
+
+const confirmDeleteNote = (note, event) => {
   if (event) event.stopPropagation();
-  showConfirmDeleteQuestion.value = question;
+  showConfirmDeleteNote.value = note;
 };
 
 const cancelDelete = () => {
-  showConfirmDeleteQuestion.value = null;
+  showConfirmDeleteNote.value = null;
 };
 
-const deleteQuestion = async () => {
+const deleteNote = async () => {
   try {
     const response = await useApiFrontend(
-      `questions/${showConfirmDeleteQuestion.value.id}`,
+      `notes/${showConfirmDeleteNote.value.id}`,
       {
         method: "DELETE",
       }
     );
 
     if (response && response.success) {
-      questions.value = questions.value.filter(
-        (q) => q.id !== showConfirmDeleteQuestion.value.id
+      notes.value = notes.value.filter(
+        (n) => n.id !== showConfirmDeleteNote.value.id
       );
-      totalQuestions.value--;
-      if (questions.value.length === 0 && currentPage.value > 1) {
+      totalNotes.value--;
+      if (notes.value.length === 0 && currentPage.value > 1) {
         goToPage(currentPage.value - 1);
       }
       if ($socket && $socket.connected) {
-        $socket.emit("question-deleted", showConfirmDeleteQuestion.value.id);
+        $socket.emit("note-deleted", showConfirmDeleteNote.value.id);
       }
     }
   } catch (err) {
-    console.error("Błąd podczas usuwania pytania:", err);
+    console.error("Błąd podczas usuwania notatki:", err);
   } finally {
-    showConfirmDeleteQuestion.value = null;
+    showConfirmDeleteNote.value = null;
   }
 };
 
-// ------ Edycja pytania ----------------------------------------
+// ------ Edycja notatki ----------------------------------------
 
-const startEditQuestion = (question, event) => {
+const startEditNote = (note, event) => {
   if (event) event.stopPropagation();
-  editingQuestion.value = question.id;
-  editedQuestionTitle.value = question.title;
-  editedQuestionContent.value = question.content;
-  editedQuestionCourseId.value = question.course_id || null;
+  editingNote.value = note.id;
+  editedNoteTitle.value = note.title;
+  editedNoteContent.value = note.content;
+  editedNoteCourseId.value = note.course_id || null;
+  editedNoteFile.value = null;
 };
 
-const cancelEditQuestion = (event) => {
+const cancelEditNote = (event) => {
   if (event) event.stopPropagation();
-  editingQuestion.value = null;
+  editingNote.value = null;
+  editPreviewImageUrl.value = null;
 };
 
-const saveEditedQuestion = async (event) => {
+const saveEditedNote = async (event) => {
   if (event) event.stopPropagation();
 
   try {
-    if (!editedQuestionTitle.value || !editedQuestionContent.value) return;
+    if (!editedNoteTitle.value || !editedNoteContent.value) return;
 
-    const response = await useApiFrontend(
-      `questions/${editingQuestion.value}`,
-      {
-        method: "PATCH",
-        body: {
-          title: editedQuestionTitle.value,
-          content: editedQuestionContent.value,
-          courseId: editedQuestionCourseId.value,
-        },
-      }
-    );
+    const formData = new FormData();
+    formData.append("title", editedNoteTitle.value);
+    formData.append("content", editedNoteContent.value);
+
+    if (editedNoteCourseId.value) {
+      formData.append("courseId", editedNoteCourseId.value);
+    }
+
+    if (editedNoteFile.value) {
+      formData.append("document", editedNoteFile.value);
+    }
+
+    const response = await useApiFrontend(`notes/${editingNote.value}`, {
+      method: "PATCH",
+      body: formData,
+      headers: {},
+    });
 
     if (response && response.success) {
-      const index = questions.value.findIndex(
-        (q) => q.id === editingQuestion.value
-      );
+      const index = notes.value.findIndex((n) => n.id === editingNote.value);
       if (index !== -1) {
-        questions.value[index].title = editedQuestionTitle.value;
-        questions.value[index].content = editedQuestionContent.value;
-        questions.value[index].course_id = editedQuestionCourseId.value;
+        notes.value[index].title = editedNoteTitle.value;
+        notes.value[index].content = editedNoteContent.value;
+        notes.value[index].course_id = editedNoteCourseId.value;
 
-        if (editedQuestionCourseId.value) {
-          const course = courses.value.find(
-            (c) => c.id === editedQuestionCourseId.value
-          );
-          if (course) {
-            questions.value[index].courses = {
-              id: course.id,
-              title: course.title,
-            };
-          }
-        } else {
-          questions.value[index].courses = null;
+        if (response.note.file_path) {
+          notes.value[index].file_path = response.note.file_path;
+          notes.value[index].file_name = response.note.file_name;
         }
       }
+
       if ($socket && $socket.connected) {
-        $socket.emit("question-edited", {
-          id: editingQuestion.value,
-          title: editedQuestionTitle.value,
-          content: editedQuestionContent.value,
-          course_id: editedQuestionCourseId.value,
+        $socket.emit("note-edited", {
+          id: editingNote.value,
+          title: editedNoteTitle.value,
+          content: editedNoteContent.value,
+          course_id: editedNoteCourseId.value,
           updated_at: new Date(),
         });
       }
-      editingQuestion.value = null;
+
+      editingNote.value = null;
     }
   } catch (err) {
-    console.error("Błąd podczas edycji pytania:", err);
+    console.error("Błąd podczas edycji notatki:", err);
   }
 };
 
 // ------ Sprawdzanie uprawnień -----------------------------------
 
-const canManageQuestion = (question) => {
-  return userId.value === question.user_id || isAdmin.value;
+const canManageNote = (note) => {
+  return userId.value === note.user_id || isAdmin.value;
 };
 
 // ------ Zmiana strony ------------------------------------------------
@@ -318,24 +328,24 @@ const canManageQuestion = (question) => {
 const goToPage = (page) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
-  fetchQuestions(page);
+  fetchNotes(page);
 };
 
 // ------ Obsługa filtrów ----------------------------------------------
 
 const applyFilter = () => {
   currentPage.value = 1;
-  fetchQuestions(1);
+  fetchNotes(1);
 };
 
-watch([selectedCourseFilter, showOnlyGeneral], () => {
+watch([selectedCourseFilter], () => {
   applyFilter();
 });
 
-// ------ Przejście na stronę ze szczegółami pytania -------------------
+// ------ Przejście na stronę ze szczegółami notatki -------------------
 
-const viewQuestion = (id) => {
-  navigateTo(`/community/questions/${id}`);
+const viewNote = (id) => {
+  navigateTo(`/community/notes/${id}`);
 };
 
 // ------ Formatowanie daty --------------------------------------------
@@ -348,16 +358,16 @@ const formatDate = (date) => {
 
 onBeforeUnmount(() => {
   if ($socket && $socket.connected) {
-    $socket.emit("leave-questions-list");
-    $socket.off("new-question");
-    $socket.off("question-updated");
-    $socket.off("question-removed");
+    $socket.emit("leave-notes-list");
+    $socket.off("new-note");
+    $socket.off("note-updated");
+    $socket.off("note-removed");
     $socket.disconnect();
   }
 });
 
 onMounted(() => {
-  fetchQuestions();
+  fetchNotes();
   fetchCourses();
   initializeSocketConnection();
 });
@@ -387,12 +397,12 @@ onMounted(() => {
     </div>
 
     <div class="main-content">
-      <div class="questions-page">
+      <div class="notes-page">
         <div class="header-section">
-          <h1>Forum pytań i odpowiedzi</h1>
+          <h1>Notatki do kursów</h1>
           <div class="header-decoration"></div>
           <p class="subtitle">
-            Zadawaj pytania, dziel się wiedzą i znajdź rozwiązania
+            Przeglądaj, twórz i udostępniaj notatki ze swoich kursów
           </p>
         </div>
 
@@ -402,18 +412,8 @@ onMounted(() => {
               <select
                 v-model="selectedCourseFilter"
                 class="filter-select"
-                @change="showOnlyGeneral = false"
               >
-                <option :value="null">Wszystkie pytania</option>
-                <option
-                  value="general"
-                  @click="
-                    showOnlyGeneral = true;
-                    selectedCourseFilter = null;
-                  "
-                >
-                  Tylko pytania ogólne
-                </option>
+                <option :value="null">Wszystkie notatki</option>
                 <option
                   v-for="course in courses"
                   :key="course.id"
@@ -427,119 +427,202 @@ onMounted(() => {
                 @click="showForm = !showForm"
                 class="ask-button"
               >
-                {{ showForm ? "Anuluj" : "Zadaj pytanie" }}
+                {{ showForm ? "Anuluj" : "Dodaj notatkę" }}
               </button>
             </div>
           </div>
+
           <div
             v-if="showForm"
-            class="question-form"
+            class="note-form"
           >
-            <h3>Nowe pytanie</h3>
+            <h3>Nowa notatka</h3>
             <input
-              v-model="newQuestion.title"
-              placeholder="Tytuł pytania"
+              v-model="newNote.title"
+              placeholder="Tytuł notatki"
               class="form-input"
             />
             <textarea
-              v-model="newQuestion.content"
-              placeholder="Treść pytania"
+              v-model="newNote.content"
+              placeholder="Treść notatki"
               rows="4"
               class="form-textarea"
             ></textarea>
             <select
-              v-model="newQuestion.courseId"
+              v-model="newNote.courseId"
               class="form-select"
             >
               <option :value="null">
-                Pytanie ogólne (bez przypisania do kursu)
+                Notatka ogólna (bez przypisania do kursu)
               </option>
               <option
                 v-for="course in courses"
                 :key="course.id"
                 :value="course.id"
               >
-                Pytanie do kursu: {{ course.title }}
+                Notatka do kursu: {{ course.title }}
               </option>
             </select>
+            <div class="file-input-container">
+              <div
+                v-if="previewImageUrl"
+                class="image-preview-container"
+              >
+                <img
+                  :src="previewImageUrl"
+                  alt="Podgląd obrazu"
+                  class="image-preview"
+                />
+              </div>
+
+              <label
+                for="file-upload"
+                class="file-input-label"
+              >
+                Dołącz plik
+                <input
+                  type="file"
+                  id="file-upload"
+                  @change="handleFileChange"
+                  class="file-input"
+                />
+              </label>
+              <span
+                v-if="selectedFile"
+                class="selected-file"
+                >{{ selectedFile }}</span
+              >
+            </div>
             <div class="form-actions">
               <button
-                @click="addQuestion"
+                @click="addNote"
                 class="submit-button"
-                :disabled="!newQuestion.title || !newQuestion.content"
+                :disabled="!newNote.title || !newNote.content"
               >
-                Wyślij pytanie
+                Wyślij notatkę
               </button>
             </div>
           </div>
 
           <div
-            v-else-if="filteredQuestions.length === 0"
+            v-if="loading"
+            class="loading-state"
+          >
+            <p>Wczytywanie notatek...</p>
+          </div>
+
+          <div
+            v-else-if="error"
+            class="error-message"
+          >
+            {{ error }}
+            <button
+              @click="fetchNotes(currentPage)"
+              class="retry-button"
+            >
+              Spróbuj ponownie
+            </button>
+          </div>
+
+          <div
+            v-else-if="filteredNotes.length === 0"
             class="empty-state"
           >
-            <h3>Brak pytań</h3>
-            <p v-if="showOnlyGeneral || selectedCourseFilter">
-              Nie znaleziono pytań spełniających wybrane kryteria.
+            <h3>Brak notatek</h3>
+            <p v-if="selectedCourseFilter">
+              Nie znaleziono notatek spełniających wybrane kryteria.
             </p>
-            <p v-else>Zadaj pierwsze pytanie, aby rozpocząć dyskusję!</p>
+            <p v-else>
+              Dodaj pierwszą notatkę, aby rozpocząć dzielenie się wiedzą!
+            </p>
           </div>
 
           <div
             v-else
-            class="questions-list"
+            class="notes-list"
           >
             <div
-              v-for="question in filteredQuestions"
-              :key="question.id"
-              class="question-item"
+              v-for="note in filteredNotes"
+              :key="note.id"
+              class="note-item"
               :class="{
-                new: question.isNew,
-                editing: editingQuestion === question.id,
+                new: note.isNew,
+                editing: editingNote === note.id,
               }"
             >
               <div
-                v-if="editingQuestion === question.id"
-                class="question-edit-form"
+                v-if="editingNote === note.id"
+                class="note-edit-form"
                 @click.stop
               >
-                <h3>Edycja pytania</h3>
+                <h3>Edycja notatki</h3>
                 <input
-                  v-model="editedQuestionTitle"
-                  placeholder="Tytuł pytania"
+                  v-model="editedNoteTitle"
+                  placeholder="Tytuł notatki"
                   class="form-input"
                 />
                 <textarea
-                  v-model="editedQuestionContent"
-                  placeholder="Treść pytania"
+                  v-model="editedNoteContent"
+                  placeholder="Treść notatki"
                   rows="4"
                   class="form-textarea"
                 ></textarea>
                 <select
-                  v-model="editedQuestionCourseId"
+                  v-model="editedNoteCourseId"
                   class="form-select"
                 >
                   <option :value="null">
-                    Pytanie ogólne (bez przypisania do kursu)
+                    Notatka ogólna (bez przypisania do kursu)
                   </option>
                   <option
                     v-for="course in courses"
                     :key="course.id"
                     :value="course.id"
                   >
-                    Pytanie do kursu: {{ course.title }}
+                    Notatka do kursu: {{ course.title }}
                   </option>
                 </select>
+                <div class="file-input-container">
+                  <div
+                    v-if="editPreviewImageUrl"
+                    class="image-preview-container"
+                  >
+                    <img
+                      :src="editPreviewImageUrl"
+                      alt="Podgląd obrazu"
+                      class="image-preview"
+                    />
+                  </div>
+
+                  <label
+                    for="edit-file-upload"
+                    class="file-input-label"
+                  >
+                    Zmień załącznik
+                    <input
+                      type="file"
+                      id="edit-file-upload"
+                      @change="handleEditFileChange"
+                      class="file-input"
+                    />
+                  </label>
+                  <span
+                    v-if="editedNoteFile"
+                    class="selected-file"
+                    >{{ editedNoteFile.name }}</span
+                  >
+                </div>
                 <div class="form-actions">
                   <button
-                    @click="cancelEditQuestion"
+                    @click="cancelEditNote"
                     class="cancel-button"
                   >
                     Anuluj
                   </button>
                   <button
-                    @click="saveEditedQuestion"
+                    @click="saveEditedNote"
                     class="submit-button"
-                    :disabled="!editedQuestionTitle || !editedQuestionContent"
+                    :disabled="!editedNoteTitle || !editedNoteContent"
                   >
                     Zapisz zmiany
                   </button>
@@ -547,65 +630,69 @@ onMounted(() => {
               </div>
 
               <template v-else>
-                <div class="question-header">
+                <div class="note-header">
                   <h3
-                    class="question-title"
-                    @click="viewQuestion(question.id)"
+                    class="note-title"
+                    @click="viewNote(note.id)"
                   >
-                    {{ question.title }}
+                    {{ note.title }}
                   </h3>
                   <div
-                    v-if="question.courses"
+                    v-if="note.course_title"
                     class="course-badge"
                   >
-                    {{ question.courses.title }}
+                    {{ note.course_title }}
                   </div>
 
                   <div
-                    v-if="canManageQuestion(question)"
-                    class="question-actions"
+                    v-if="canManageNote(note)"
+                    class="note-actions"
                   >
                     <button
-                      @click="startEditQuestion(question, $event)"
+                      @click="startEditNote(note, $event)"
                       class="edit-button small"
-                      title="Edytuj pytanie"
-                      v-if="userId === question.user_id"
+                      title="Edytuj notatkę"
+                      v-if="userId === note.user_id"
                     >
                       <i class="icon-edit">✏️</i>
                     </button>
                     <button
-                      @click="confirmDeleteQuestion(question, $event)"
+                      @click="confirmDeleteNote(note, $event)"
                       class="delete-button small"
-                      title="Usuń pytanie"
+                      title="Usuń notatkę"
                     >
                       <i class="icon-delete">🗑️</i>
                     </button>
                   </div>
                 </div>
                 <div
-                  class="question-content"
-                  @click="viewQuestion(question.id)"
+                  class="note-content"
+                  @click="viewNote(note.id)"
                 >
-                  {{ question.content.substring(0, 150)
-                  }}{{ question.content.length > 150 ? "..." : "" }}
+                  {{ note.content.substring(0, 150)
+                  }}{{ note.content.length > 150 ? "..." : "" }}
                 </div>
-                <div class="question-footer">
+                <div class="note-footer">
                   <span class="author">
-                    Autor: {{ question.users?.first_name }}
-                    {{ question.users?.last_name }}
+                    Autor: {{ note.first_name }}
+                    {{ note.last_name }}
                   </span>
                   <span class="date">
-                    Data: {{ formatDate(question.created_at) }}
+                    Data: {{ formatDate(note.created_at) }}
                   </span>
-                  <span class="answers-count">
-                    Odpowiedzi: {{ question._count?.course_answers || 0 }}
+                  <span
+                    v-if="note.file_path"
+                    class="file-badge"
+                  >
+                    <i class="icon-file">📎</i> Zawiera załącznik
                   </span>
                 </div>
               </template>
             </div>
           </div>
+
           <div
-            v-if="filteredQuestions.length > 0"
+            v-if="filteredNotes.length > 0"
             class="pagination"
           >
             <button
@@ -629,15 +716,15 @@ onMounted(() => {
         </div>
 
         <div
-          v-if="showConfirmDeleteQuestion"
+          v-if="showConfirmDeleteNote"
           class="confirm-delete-dialog"
         >
           <div class="dialog-content">
             <h3>Potwierdź usunięcie</h3>
             <p>
-              Czy na pewno chcesz usunąć pytanie "{{
-                showConfirmDeleteQuestion.title
-              }}" wraz ze wszystkimi odpowiedziami?
+              Czy na pewno chcesz usunąć notatkę "{{
+                showConfirmDeleteNote.title
+              }}"?
             </p>
             <div class="dialog-actions">
               <button
@@ -647,7 +734,7 @@ onMounted(() => {
                 Anuluj
               </button>
               <button
-                @click="deleteQuestion"
+                @click="deleteNote"
                 class="delete-dialog-button"
               >
                 Usuń
@@ -661,7 +748,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.questions-page {
+.notes-page {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
@@ -749,7 +836,7 @@ onMounted(() => {
   background-color: #d64545;
 }
 
-.question-form {
+.note-form {
   background: #f8f9fa;
   padding: 15px;
   border-radius: 8px;
@@ -757,7 +844,7 @@ onMounted(() => {
   border: 1px solid #e9ecef;
 }
 
-.question-form h3 {
+.note-form h3 {
   margin-top: 0;
   margin-bottom: 15px;
   font-size: 18px;
@@ -792,6 +879,35 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
+.file-input-container {
+  margin-bottom: 15px;
+}
+
+.file-input-label {
+  display: inline-block;
+  background-color: #f0f0f0;
+  color: #333;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.file-input-label:hover {
+  background-color: #e0e0e0;
+}
+
+.file-input {
+  display: none;
+}
+
+.selected-file {
+  margin-left: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
 .submit-button {
   background-color: #eb5757;
   color: white;
@@ -809,6 +925,12 @@ onMounted(() => {
 .submit-button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 20px;
+  color: #666;
 }
 
 .error-message {
@@ -843,13 +965,13 @@ onMounted(() => {
   color: #666;
 }
 
-.questions-list {
+.notes-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-.question-item {
+.note-item {
   background: white;
   border: 1px solid #eee;
   border-radius: 8px;
@@ -858,18 +980,18 @@ onMounted(() => {
   transition: all 0.2s;
 }
 
-.question-item:hover {
+.note-item:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 
-.question-header {
+.note-header {
   padding: 12px 15px;
   border-bottom: 1px solid #f0f0f0;
   position: relative;
 }
 
-.question-title {
+.note-title {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
@@ -886,45 +1008,29 @@ onMounted(() => {
   font-size: 12px;
 }
 
-.question-content {
+.note-content {
   padding: 12px 15px;
   color: #555;
   line-height: 1.4;
   cursor: pointer;
 }
 
-.question-item.new {
-  animation: highlightNewQuestion 2s ease-out;
+.note-item.new {
+  animation: highlightNewNote 2s ease-out;
   position: relative;
   border-left: 4px solid #eb5757;
 }
 
-.question-item.editing {
+.note-item.editing {
   cursor: default;
 }
 
-.question-item.editing:hover {
+.note-item.editing:hover {
   transform: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.action-button {
-  background: none;
-  border: 1px solid;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  font-size: 14px;
-}
-
-.icon-edit,
-.icon-delete {
-  font-style: normal;
-  font-size: 16px;
-}
-
-.question-actions {
+.note-actions {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -945,6 +1051,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.icon-edit,
+.icon-delete {
+  font-style: normal;
+  font-size: 16px;
 }
 
 .edit-button {
@@ -971,63 +1083,38 @@ onMounted(() => {
   font-size: 12px;
 }
 
-.delete-dialog-button {
-  padding: 8px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 14px;
-}
-
-.delete-dialog-button {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.delete-dialog-button:hover {
-  background-color: #d73c2c;
-}
-
-.question-edit-form {
+.note-edit-form {
   padding: 15px;
   background-color: #f8f9fa;
   border-radius: 8px;
 }
 
-.question-edit-form h3 {
+.note-edit-form h3 {
   margin-top: 0;
   margin-bottom: 15px;
   font-size: 18px;
 }
 
-@keyframes highlightNewQuestion {
-  0% {
-    background-color: rgba(235, 87, 87, 0.2);
-    transform: translateY(-5px);
-  }
-  30% {
-    background-color: rgba(235, 87, 87, 0.15);
-    transform: translateY(0);
-  }
-  100% {
-    background-color: rgba(255, 240, 240, 0.5);
-  }
+.note-footer {
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  font-size: 12px;
+  color: #666;
 }
 
-@keyframes fadeInOut {
-  0% {
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+.author,
+.date,
+.file-badge {
+  display: flex;
+  align-items: center;
+}
+
+.file-badge {
+  color: #4a90e2;
 }
 
 .pagination {
@@ -1066,24 +1153,6 @@ onMounted(() => {
 .page-info {
   font-size: 14px;
   color: #666;
-}
-
-.question-footer {
-  padding: 10px 15px;
-  background: #f8f9fa;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  font-size: 12px;
-  color: #666;
-}
-
-.author,
-.date,
-.answers-count {
-  display: flex;
-  align-items: center;
 }
 
 .confirm-delete-dialog {
@@ -1134,7 +1203,7 @@ onMounted(() => {
   background-color: #888;
 }
 
-.delete-button {
+.delete-dialog-button {
   background-color: #e74c3c;
   color: white;
   border: none;
@@ -1144,8 +1213,22 @@ onMounted(() => {
   transition: all 0.2s;
 }
 
-.delete-button:hover {
+.delete-dialog-button:hover {
   background-color: #c0392b;
+}
+
+@keyframes highlightNewNote {
+  0% {
+    background-color: rgba(235, 87, 87, 0.2);
+    transform: translateY(-5px);
+  }
+  30% {
+    background-color: rgba(235, 87, 87, 0.15);
+    transform: translateY(0);
+  }
+  100% {
+    background-color: rgba(255, 240, 240, 0.5);
+  }
 }
 
 @media (max-width: 600px) {
@@ -1159,12 +1242,12 @@ onMounted(() => {
     width: 100%;
   }
 
-  .question-footer {
+  .note-footer {
     flex-direction: column;
     gap: 5px;
   }
 
-  .question-actions {
+  .note-actions {
     position: static;
     margin-top: 10px;
     justify-content: flex-end;
@@ -1232,5 +1315,22 @@ onMounted(() => {
     border-right: none;
     border-bottom: 1px solid #e9ecef;
   }
+}
+
+.image-preview-container {
+  margin: 0 0 10px 0;
+  position: relative;
+  display: block;
+  max-width: 300px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.image-preview {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 </style>
