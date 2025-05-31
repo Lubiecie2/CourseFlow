@@ -5,7 +5,7 @@ import { nextTick } from "vue";
 definePageMeta({
   layout: "login",
   middleware: ["auth", "admin-auth"],
-  pagePermissions: ["PANEL_CREATE_ROLE", "PANEL_SHOW_USERS"],
+  pagePermissions: ["PANEL_CREATE_ROLE"],
 });
 
 const roleName = ref("");
@@ -106,6 +106,63 @@ if (permissionsError.value) {
 }
 
 // --------- KONIEC POBIERANIE UPRAWNIEŃ --------------------------------------------------
+
+// --------- KONIEC POBIERANIE UPRAWNIEŃ --------------------------------------------------
+
+const findPermissionId = (permName) => {
+  const perm = permissions.value?.find((p) => p.name === permName);
+  return perm ? perm.id : null;
+};
+
+const usersPanelId = findPermissionId("PANEL_SHOW_USERS");
+const usersListId = findPermissionId("PANEL_SHOW_USERS_LIST");
+const adminPanelId = findPermissionId("PANEL_SHOW_ADMIN_PANEL");
+
+// --------- MONITOROWANIE ZALEŻNOŚCI UPRAWNIEŃ ------------------------------------------
+
+watch(
+  selectedPermissions,
+  (newValue) => {
+    if (
+      newValue.includes(usersListId) &&
+      usersPanelId &&
+      !newValue.includes(usersPanelId)
+    ) {
+      selectedPermissions.value.push(usersPanelId);
+    }
+
+    if (
+      newValue.length > 0 &&
+      adminPanelId &&
+      !newValue.includes(adminPanelId)
+    ) {
+      selectedPermissions.value.push(adminPanelId);
+    }
+  },
+  { deep: true }
+);
+
+watch(
+  editSelectedPermissions,
+  (newValue) => {
+    if (
+      newValue.includes(usersListId) &&
+      usersPanelId &&
+      !newValue.includes(usersPanelId)
+    ) {
+      editSelectedPermissions.value.push(usersPanelId);
+    }
+
+    if (
+      newValue.length > 0 &&
+      adminPanelId &&
+      !newValue.includes(adminPanelId)
+    ) {
+      editSelectedPermissions.value.push(adminPanelId);
+    }
+  },
+  { deep: true }
+);
 
 const handleRoleClick = async (role) => {
   selectedRole.value = role;
@@ -208,6 +265,12 @@ const translatePermissions = {
   PANEL_SHOW_ADMIN_PANEL: "Zarządzanie stroną",
   PANEL_CREATE_ROLE: "Tworzenie ról",
   PANEL_SHOW_USERS: "Dostęp do panelu użytkowników",
+  PANEL_MODIFY_COURSES: "Modyfikacja kursów",
+  PANEL_CREATE_COURSES: "Tworzenie kursów",
+  PANEL_SHOW_USER_LOGS: "Przeglądanie logów użytkowników",
+  PANEL_SHOW_COURSES_LOGS: "Przeglądanie logów kursów",
+  PANEL_SETTINGS_PARTITION: "Zarządzanie partycjami",
+  PANEL_CREATE_NOTIFICATIONS: "Tworzenie powiadomień",
 };
 </script>
 
@@ -234,6 +297,7 @@ const translatePermissions = {
             to="/users"
             class="nav-item"
             active-class="active"
+            v-if="usePermissionGuard('PANEL_SHOW_USERS')"
           >
             <span class="nav-text">Użytkownicy</span>
           </NuxtLink>
@@ -241,6 +305,7 @@ const translatePermissions = {
             to="/users/role"
             class="nav-item"
             active-class="active"
+            v-if="usePermissionGuard('PANEL_CREATE_ROLE')"
           >
             <span class="nav-text">Role i uprawnienia</span>
           </NuxtLink>
@@ -248,6 +313,7 @@ const translatePermissions = {
             to="/users/notifications"
             class="nav-item"
             active-class="active"
+            v-if="usePermissionGuard('PANEL_CREATE_NOTIFICATIONS')"
           >
             <span class="nav-text">Powiadomienia</span>
           </NuxtLink>

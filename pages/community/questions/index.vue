@@ -524,12 +524,15 @@ onMounted(() => {
             </div>
           </div>
 
-          <template v-else>
+          <NuxtLink
+            v-else
+            :to="{
+              name: 'community-questions-id',
+              params: { id: question.id },
+            }"
+          >
             <div class="question-header">
-              <h3
-                class="question-title"
-                @click="viewQuestion(question.id)"
-              >
+              <h3 class="question-title">
                 {{ question.title }}
               </h3>
               <div
@@ -544,7 +547,7 @@ onMounted(() => {
                 class="question-actions"
               >
                 <button
-                  @click="startEditQuestion(question, $event)"
+                  @click.prevent="startEditQuestion(question, $event)"
                   class="edit-button small"
                   title="Edytuj pytanie"
                   v-if="userId === question.user_id"
@@ -552,7 +555,7 @@ onMounted(() => {
                   <i class="icon-edit">✏️</i>
                 </button>
                 <button
-                  @click="confirmDeleteQuestion(question, $event)"
+                  @click.prevent="confirmDeleteQuestion(question, $event)"
                   class="delete-button small"
                   title="Usuń pytanie"
                 >
@@ -560,10 +563,7 @@ onMounted(() => {
                 </button>
               </div>
             </div>
-            <div
-              class="question-content"
-              @click="viewQuestion(question.id)"
-            >
+            <div class="question-content">
               {{ question.content.substring(0, 150)
               }}{{ question.content.length > 150 ? "..." : "" }}
             </div>
@@ -579,7 +579,7 @@ onMounted(() => {
                 Odpowiedzi: {{ question._count?.course_answers || 0 }}
               </span>
             </div>
-          </template>
+          </NuxtLink>
         </div>
       </div>
       <div

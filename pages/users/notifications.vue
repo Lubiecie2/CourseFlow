@@ -1,7 +1,8 @@
 <script setup>
 definePageMeta({
-  middleware: "auth",
+  middleware: ["auth", "admin-auth"],
   layout: "login",
+  pagePermissions: ["PANEL_CREATE_NOTIFICATIONS"],
 });
 
 // ------ Zmienne ------------------------------------------
@@ -61,6 +62,7 @@ const sendNotification = async () => {
             to="/users"
             class="nav-item"
             active-class="active"
+            v-if="usePermissionGuard('PANEL_SHOW_USERS')"
           >
             <span class="nav-text">Użytkownicy</span>
           </NuxtLink>
@@ -68,6 +70,7 @@ const sendNotification = async () => {
             to="/users/role"
             class="nav-item"
             active-class="active"
+            v-if="usePermissionGuard('PANEL_CREATE_ROLE')"
           >
             <span class="nav-text">Role i uprawnienia</span>
           </NuxtLink>
@@ -75,6 +78,7 @@ const sendNotification = async () => {
             to="/users/notifications"
             class="nav-item"
             active-class="active"
+            v-if="usePermissionGuard('PANEL_CREATE_NOTIFICATIONS')"
           >
             <span class="nav-text">Powiadomienia</span>
           </NuxtLink>

@@ -585,14 +585,19 @@ onMounted(async () => {
 }
 
 .question-detail {
-  margin-bottom: 50px;
+  margin-bottom: 30px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  position: relative;
 }
 
 .question-header-detail {
   padding: 20px;
   border-bottom: 1px solid #e0e0e0;
   background-color: #f8f9fa;
-  border-radius: 8px 8px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -637,31 +642,31 @@ onMounted(async () => {
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(235, 87, 87, 0.2);
 }
-
 .question-content-detail {
   padding: 30px 25px;
   color: #333;
   line-height: 1.8;
   white-space: pre-line;
-  background-color: #fefefe;
-  border-left: 5px solid #eb5757;
+  background-color: #fff;
   font-size: 16px;
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin: 20px 0;
-  border-radius: 0 8px 8px 0;
+  border-left: none;
+  box-shadow: none;
+  margin: 0;
+  border-radius: 0;
   font-weight: 400;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .question-footer {
   padding: 15px 20px;
   background: #f8f9fa;
-  border-top: 1px solid #e0e0e0;
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   font-size: 14px;
   color: #666;
-  border-radius: 0 0 8px 8px;
+  border-top: none;
+  border-radius: 0;
 }
 
 .author,
@@ -672,11 +677,13 @@ onMounted(async () => {
 }
 
 .answers-section {
-  margin-top: 50px;
+  margin-top: 30px;
   background-color: #fff;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  position: relative;
 }
 
 .section-title {

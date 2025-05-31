@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import { onMounted } from "vue";
-
 definePageMeta({
   layout: "login",
 });
@@ -18,10 +16,3 @@ definePageMeta({
     <foter></foter>
   </div>
 </template>
-
-<style>
-.pause {
-  width: 100%;
-  height: 700px;
-}
-</style>
