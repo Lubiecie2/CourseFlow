@@ -327,7 +327,6 @@ const goBackToCourse = () => {
   text-align: center;
 }
 
-/* Zachowanie pozostałych styli bez zmian */
 .code-block {
   margin: 1rem 0;
   position: relative;
@@ -427,7 +426,6 @@ const goBackToCourse = () => {
   background-color: #d63031;
 }
 
-/* Pozostałe style dla testów */
 .tests-section {
   margin-top: 40px;
   padding-top: 20px;
@@ -530,7 +528,6 @@ const goBackToCourse = () => {
   }
 }
 
-/* Style dla formatowania tekstu i obrazów zostają bez zmian */
 .font-bold {
   font-weight: bold;
 }

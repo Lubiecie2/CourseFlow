@@ -245,6 +245,7 @@ watch(logsRefreshCounter, () => {
           to="/users"
           class="nav-item"
           active-class="active"
+          v-if="usePermissionGuard('PANEL_SHOW_USERS')"
         >
           <span class="nav-text">Użytkownicy</span>
         </NuxtLink>
@@ -252,6 +253,7 @@ watch(logsRefreshCounter, () => {
           to="/users/role"
           class="nav-item"
           active-class="active"
+          v-if="usePermissionGuard('PANEL_CREATE_ROLE')"
         >
           <span class="nav-text">Role i uprawnienia</span>
         </NuxtLink>
@@ -259,6 +261,7 @@ watch(logsRefreshCounter, () => {
           to="/users/notifications"
           class="nav-item"
           active-class="active"
+          v-if="usePermissionGuard('PANEL_CREATE_NOTIFICATIONS')"
         >
           <span class="nav-text">Powiadomienia</span>
         </NuxtLink>
@@ -309,7 +312,7 @@ watch(logsRefreshCounter, () => {
                 <th class="hide-sm">Imię</th>
                 <th class="hide-sm">Nazwisko</th>
                 <th>Rola</th>
-                <th>Akcje</th>
+                <th v-if="usePermissionGuard('PANEL_EDIT_USERS')">Akcje</th>
               </tr>
             </thead>
             <tbody>
@@ -340,7 +343,10 @@ watch(logsRefreshCounter, () => {
                     </option>
                   </select>
                 </td>
-                <td class="user-actions">
+                <td
+                  class="user-actions"
+                  v-if="usePermissionGuard('PANEL_EDIT_USERS')"
+                >
                   <div
                     v-if="!user.editingRole"
                     class="action-buttons"
@@ -392,7 +398,10 @@ watch(logsRefreshCounter, () => {
           <h3>Brak użytkowników</h3>
           <p>Nie znaleziono żadnych użytkowników.</p>
         </div>
-        <div class="logs-section">
+        <div
+          class="logs-section"
+          v-if="usePermissionGuard('PANEL_SHOW_USER_LOGS')"
+        >
           <h2>Historia operacji</h2>
           <p class="section-description">Zmiany ról i usuwanie użytkowników</p>
 

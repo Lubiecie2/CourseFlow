@@ -130,7 +130,8 @@ const deleteCourse = async () => {
 const getUpdateDetails = (oldValue, description) => {
   if (description) return description;
 
-  if (oldValue && typeof oldValue === "string") { // w przyszłości dodać nowe triggery, które będą monitorowały te dane
+  if (oldValue && typeof oldValue === "string") {
+    // w przyszłości dodać nowe triggery, które będą monitorowały te dane
     if (oldValue.includes("chapter") || oldValue.includes("rozdział")) {
       return "Zmiana w rozdziałach kursu";
     } else if (oldValue.includes("test") || oldValue.includes("quiz")) {
@@ -308,7 +309,10 @@ watch(deleteSuccessMessage, () => {
           </NuxtLink>
         </div>
 
-        <div class="logs-section">
+        <div
+          class="logs-section"
+          v-if="usePermissionGuard('PANEL_SHOW_COURSES_LOGS')"
+        >
           <h2>Historia operacji kursów</h2>
           <p class="section-description">
             Utworzenie, edycja i usuwanie kursów

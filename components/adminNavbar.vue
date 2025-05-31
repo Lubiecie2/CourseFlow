@@ -53,6 +53,7 @@ const { logout } = userStore;
         <button
           class="red-button"
           @click="goToSettings"
+          v-if="usePermissionGuard('PANEL_SETTINGS_PARTITION')"
         >
           Ustawienia strony
         </button>

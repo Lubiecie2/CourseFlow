@@ -3,7 +3,7 @@
 definePageMeta({
   middleware: ["auth", "admin-auth"],
   layout: "login",
-  pagePermissions: ["PANEL_SHOW_ADMIN_PANEL"],
+  pagePermissions: ["PANEL_SETTINGS_PARTITION"],
 });
 
 // ------ Zmienne stanu -------------------------------------------------
