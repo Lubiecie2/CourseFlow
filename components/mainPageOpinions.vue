@@ -69,14 +69,14 @@ export default {
         },
         {
           name: "Michał Bernardy",
-          website: "uczeniezpasji.pl",
-          text: "Nigdy nauka nie była tak przyjemna!",
+          website: "taskforge.pl",
+          text: 'Po TaskForge, gdzie każdy task był jak zagadka ("Czy się zapisze? Czy zniknie? Kto wie!"), CourseFlow to jak powiew świeżego powietrza. Teraz moja jedyna przygoda to nauka, a nie debugowanie task managera (ani Dockera).',
           image: "/images/recenzant3.jpg",
         },
         {
           name: "Adrian Gargula",
-          website: "naukanajuz.pl",
-          text: "Z CourseFlow mogę uczyć się w dowolnym miejscu i czasie, co jest dla mnie ogromnym plusem.",
+          website: "taskforge.pl",
+          text: "Wreszcie mogę się uczyć zamiast walczyć z interfejsem! Na TaskForge tyle czasu spędzałem na szukaniu funkcji, że na naukę już nie starczało. CourseFlow to jak przesiadka z roweru bez kół na Teslę. STAY HARD!!!",
           image: "/images/recenzant.jpg",
         },
         {
