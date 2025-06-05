@@ -548,10 +548,7 @@ onMounted(() => {
 
               <template v-else>
                 <div class="question-header">
-                  <h3
-                    class="question-title"
-                    @click="viewQuestion(question.id)"
-                  >
+                  <h3 class="question-title">
                     {{ question.title }}
                   </h3>
                   <div

@@ -241,7 +241,7 @@ onMounted(() => {
 
 .course-block-img {
   width: 100%;
-  height: 260px;
+  height: 360px;
   overflow: hidden;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;

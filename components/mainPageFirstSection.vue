@@ -4,7 +4,6 @@ const router = useRouter();
 const goToCourses = () => {
   router.push("/courses");
 };
-
 </script>
 
 <template>
@@ -23,7 +22,12 @@ const goToCourses = () => {
             tutaj kursy dopasowane do Twoich potrzeb. Dołącz do nas i rozpocznij
             swoją edukacyjną podróż już dziś!
           </p>
-          <button class="cta-button" @click="goToCourses" >Rozpocznij naukę</button>
+          <button
+            class="cta-button"
+            @click="goToCourses"
+          >
+            Rozpocznij naukę
+          </button>
         </div>
       </div>
       <div class="right-side"></div>

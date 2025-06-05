@@ -364,6 +364,7 @@ const goToLearning = () => {
 <style scoped>
 .profile-container {
   max-width: 1200px;
+  min-height: 800px;
   margin: 40px auto;
   padding: 0 20px;
   font-family: Arial, sans-serif;

@@ -466,6 +466,91 @@
   max-width: 200px;
 }
 
+.draggable-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  position: relative;
+  width: 100%;
+  padding-right: 50px;
+  transition: all 0.2s ease;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background: white;
+}
+
+.draggable-item:hover {
+  background: #f8f9fa;
+  border-color: #e9ecef;
+}
+
+.sortable-chosen {
+  background: #e3f2fd !important;
+  border: 2px solid #eb5757 !important;
+  transform: scale(1.02) !important;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3) !important;
+  z-index: 999 !important;
+}
+
+.sortable-ghost {
+  opacity: 0.5 !important;
+  background: #f0f8f0 !important;
+  border: 2px dashed #eb5757 !important;
+}
+
+/* Block number - numerek bloku */
+.block-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  background-color: #f5f5f5;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: normal;
+  margin-right: 10px;
+  margin-top: 8px;
+  user-select: none;
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.block-number:hover {
+  background-color: #eb5757;
+  color: white;
+  border-color: #eb5757;
+}
+
+.block-number:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+.sortable-chosen .block-number {
+  background-color: #eb5757 !important;
+  color: white !important;
+  border-color: #eb5757 !important;
+  animation: selectedPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes selectedPulse {
+  0% {
+    box-shadow: #eb5757;
+  }
+  100% {
+    box-shadow: 0 0 0 6px rgba(33, 150, 243, 0);
+  }
+}
+
+.draggable-item,
+.block-number,
+.editable-element {
+  transition: all 0.2s ease;
+}
+
 .file-input-label:hover {
   background-color: #d64545;
 }
@@ -639,7 +724,9 @@
             <component
               :is="getComponent(element.type)"
               v-bind="element.params"
-              contenteditable="true"
+              :contenteditable="
+                element.type !== 'image' && element.type !== 'video'
+              "
               @blur="updateContent($event, index)"
               class="editable-element"
               :class="element.params.format"

@@ -38,14 +38,6 @@ definePageMeta({
         >
           <span class="nav-text">Quizy i testy</span>
         </NuxtLink>
-
-        <NuxtLink
-          :to="`/editCourse/${courseId}/editSettings`"
-          class="nav-item"
-          active-class="active"
-        >
-          <span class="nav-text">Ustawienia</span>
-        </NuxtLink>
       </nav>
     </div>
 

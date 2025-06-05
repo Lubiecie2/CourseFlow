@@ -166,6 +166,7 @@ onMounted(fetchStats);
         <NuxtLink
           to="/users"
           class="quick-link-card"
+          v-if="usePermissionGuard('PANEL_SHOW_USERS')"
         >
           <div class="quick-link-icon">👤</div>
           <div class="quick-link-text">
@@ -177,6 +178,7 @@ onMounted(fetchStats);
         <NuxtLink
           to="/users/role"
           class="quick-link-card"
+          v-if="usePermissionGuard('PANEL_SHOW_USERS')"
         >
           <div class="quick-link-icon">🔑</div>
           <div class="quick-link-text">
@@ -188,6 +190,7 @@ onMounted(fetchStats);
         <NuxtLink
           to="/users/notifications"
           class="quick-link-card"
+          v-if="usePermissionGuard('PANEL_CREATE_NOTIFICATIONS')"
         >
           <div class="quick-link-icon">🔔</div>
           <div class="quick-link-text">

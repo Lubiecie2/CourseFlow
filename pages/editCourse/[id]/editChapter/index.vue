@@ -229,6 +229,7 @@ const deleteChapter = async () => {
   </div>
 </template>
 
+// ...existing code...
 <style scoped>
 .chapters-container {
   max-width: 800px;
@@ -326,6 +327,9 @@ textarea.form-control {
 }
 
 .chapter-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 15px;
   border-bottom: 1px solid #e9ecef;
 }
@@ -337,31 +341,25 @@ textarea.form-control {
 .chapter-title {
   font-weight: 600;
   font-size: 16px;
-  margin-bottom: 4px;
+  flex: 1;
 }
 
-.chapter-description {
-  font-size: 14px;
-  color: #6c757d;
-}
-
-.loading {
-  text-align: center;
-  padding: 20px;
-  color: #6c757d;
-}
 .chapter-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .btn-delete {
   color: #fff;
   background-color: rgba(235, 87, 87, 0.85);
   border: none;
-  padding: 5px 10px;
+  padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .btn-delete:hover {
@@ -373,13 +371,22 @@ textarea.form-control {
   color: #fff;
   background-color: #007bff;
   border: none;
-  padding: 5px 10px;
+  padding: 8px 12px;
   border-radius: 4px;
   text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .btn-edit:hover {
   background-color: #0069d9;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
 }
 
 .delete-dialog {

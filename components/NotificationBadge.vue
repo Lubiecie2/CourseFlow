@@ -81,7 +81,7 @@ const formatDate = (dateString) => {
 onMounted(() => {
   fetchUnreadCount();
   document.addEventListener("click", handleClickOutside);
-  refreshInterval.value = setInterval(fetchUnreadCount, 60000);
+  refreshInterval.value = setInterval(fetchUnreadCount, 600000); // 2 minuty
 });
 
 onBeforeUnmount(() => {

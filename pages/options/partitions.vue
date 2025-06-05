@@ -177,6 +177,13 @@ onMounted(fetchPartitions);
         >
           <span class="nav-text">Partycje</span>
         </NuxtLink>
+        <NuxtLink
+          to="/options/waf"
+          class="nav-item"
+          active-class="active"
+        >
+          <span class="nav-text">Bezpieczeństwo</span>
+        </NuxtLink>
       </nav>
     </div>
 
