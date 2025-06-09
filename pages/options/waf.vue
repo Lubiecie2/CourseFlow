@@ -88,6 +88,19 @@ const refreshData = async () => {
 
 const updateConfig = async () => {
   try {
+    console.log("Wysyłana konfiguracja:", {
+      rateLimiting: {
+        enabled: config.value.rateLimitEnabled,
+        maxRequests: config.value.rateLimitMax,
+      },
+      sqlInjection: {
+        enabled: config.value.sqlInjectionEnabled,
+      },
+      xss: {
+        enabled: config.value.xssEnabled,
+      },
+    });
+
     await useApiFrontend("waf/config", {
       method: "PATCH",
       body: {
@@ -105,7 +118,7 @@ const updateConfig = async () => {
         },
       },
     });
-    await refreshData();
+
     console.log("✅ Konfiguracja WAF zaktualizowana");
   } catch (error) {
     console.error("Błąd podczas aktualizacji konfiguracji:", error);
@@ -170,19 +183,6 @@ onMounted(() => {
 
         <div class="dashboard-content">
           <div class="stats-grid">
-            <div class="stat-card">
-              <div class="card-header">
-                <h3>Zablokowane (sesja)</h3>
-                <div class="card-icon red">🛡️</div>
-              </div>
-              <div class="card-value blocked">
-                {{ formatNumber(stats.blockedRequests) }}
-              </div>
-              <div class="card-change negative">
-                {{ stats.blockRate }} ratio
-              </div>
-            </div>
-
             <div class="stat-card">
               <div class="card-header">
                 <h3>Ataki XSS (ogółem)</h3>
@@ -336,21 +336,22 @@ onMounted(() => {
                     v-model="config.rateLimitEnabled"
                     @change="updateConfig"
                   />
+                  <span class="checkmark"></span>
                   Rate Limiting
                 </label>
                 <div
                   v-if="config.rateLimitEnabled"
-                  class="config-details"
+                  class="config-detail"
                 >
+                  <label>Max requests per minute:</label>
                   <input
                     type="number"
-                    v-model="config.rateLimitMax"
+                    v-model.number="config.rateLimitMax"
                     @change="updateConfig"
-                    class="config-input"
                     min="1"
                     max="10000"
+                    class="number-input"
                   />
-                  <span>żądań/minutę</span>
                 </div>
               </div>
 
@@ -361,6 +362,7 @@ onMounted(() => {
                     v-model="config.sqlInjectionEnabled"
                     @change="updateConfig"
                   />
+                  <span class="checkmark"></span>
                   SQL Injection Protection
                 </label>
               </div>
@@ -372,9 +374,19 @@ onMounted(() => {
                     v-model="config.xssEnabled"
                     @change="updateConfig"
                   />
+                  <span class="checkmark"></span>
                   XSS Protection
                 </label>
               </div>
+            </div>
+
+            <div class="config-actions">
+              <button
+                @click="manualRefresh"
+                class="refresh-btn"
+              >
+                🔄 Odśwież dane
+              </button>
             </div>
           </div>
         </div>
@@ -454,6 +466,46 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+.config-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.refresh-btn {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.refresh-btn:hover {
+  background: #2563eb;
+}
+
+.number-input {
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  margin-left: 10px;
+}
+
+.config-label input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.config-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 500;
 }
 
 .header-info h1 {
