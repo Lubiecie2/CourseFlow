@@ -117,12 +117,14 @@ const findPermissionId = (permName) => {
 const usersPanelId = findPermissionId("PANEL_SHOW_USERS");
 const usersListId = findPermissionId("PANEL_SHOW_USERS_LIST");
 const adminPanelId = findPermissionId("PANEL_SHOW_ADMIN_PANEL");
-
+const coursesLogsId = findPermissionId("PANEL_SHOW_COURSES_LOGS");
+const createCoursesId = findPermissionId("PANEL_CREATE_COURSES");
 // --------- MONITOROWANIE ZALEŻNOŚCI UPRAWNIEŃ ------------------------------------------
 
 watch(
   selectedPermissions,
   (newValue) => {
+
     if (
       newValue.includes(usersListId) &&
       usersPanelId &&
@@ -130,6 +132,16 @@ watch(
     ) {
       selectedPermissions.value.push(usersPanelId);
     }
+
+
+    if (
+      newValue.includes(coursesLogsId) &&
+      createCoursesId &&
+      !newValue.includes(createCoursesId)
+    ) {
+      selectedPermissions.value.push(createCoursesId);
+    }
+
 
     if (
       newValue.length > 0 &&
@@ -145,12 +157,21 @@ watch(
 watch(
   editSelectedPermissions,
   (newValue) => {
+
     if (
       newValue.includes(usersListId) &&
       usersPanelId &&
       !newValue.includes(usersPanelId)
     ) {
       editSelectedPermissions.value.push(usersPanelId);
+    }
+
+    if (
+      newValue.includes(coursesLogsId) &&
+      createCoursesId &&
+      !newValue.includes(createCoursesId)
+    ) {
+      editSelectedPermissions.value.push(createCoursesId);
     }
 
     if (
@@ -261,12 +282,11 @@ const translatePermissions = {
   PANEL_SHOW_USERS_LIST: "Zarządzanie użytkownikami",
   PANEL_EDIT_USERS: "Edytowanie użytkowników",
   PANEL_SHOW_TESTS: "Zarządzanie testami",
-  PANEL_SHOW_COURSES: "Zarządzanie kursami",
   PANEL_SHOW_ADMIN_PANEL: "Zarządzanie stroną",
   PANEL_CREATE_ROLE: "Tworzenie ról",
   PANEL_SHOW_USERS: "Dostęp do panelu użytkowników",
   PANEL_MODIFY_COURSES: "Modyfikacja kursów",
-  PANEL_CREATE_COURSES: "Tworzenie kursów",
+  PANEL_CREATE_COURSES: "Zarządzanie kursami",
   PANEL_SHOW_USER_LOGS: "Przeglądanie logów użytkowników",
   PANEL_SHOW_COURSES_LOGS: "Przeglądanie logów kursów",
   PANEL_SETTINGS_PARTITION: "Zarządzanie partycjami",
