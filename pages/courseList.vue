@@ -4,6 +4,7 @@ import { ref, onMounted } from "vue";
 definePageMeta({
   middleware: ["auth", "admin-auth"],
   layout: "login",
+  pagePermissions: ["PANEL_CREATE_COURSES"],
 });
 
 // ------ Zmienne -------------------------------------------

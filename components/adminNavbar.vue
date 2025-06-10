@@ -60,12 +60,14 @@ const { logout } = userStore;
         <button
           class="red-button"
           @click="goToCourseList"
+          v-if="usePermissionGuard('PANEL_CREATE_COURSES')"
         >
           Lista kursów
         </button>
         <button
           class="red-button"
           @click="goToCourses"
+          v-if="usePermissionGuard('PANEL_CREATE_COURSES')"
         >
           Stwórz kurs
         </button>
@@ -103,19 +105,21 @@ const { logout } = userStore;
         <button
           class="red-button"
           @click="goToSettings"
+          v-if="usePermissionGuard('PANEL_SETTINGS_PARTITION')"
         >
           Ustawienia strony
         </button>
         <button
           class="red-button"
           @click="goToCourseList"
+          v-if="usePermissionGuard('PANEL_CREATE_COURSES')"
         >
           Lista kursów
         </button>
         <button
           class="red-button"
           @click="goToCourses"
-          v-if="usePermissionGuard('PANEL_SHOW_COURSES')"
+          v-if="usePermissionGuard('PANEL_CREATE_COURSES')"
         >
           Stwórz kurs
         </button>

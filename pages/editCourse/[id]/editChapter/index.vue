@@ -1,4 +1,10 @@
 <script setup>
+definePageMeta({
+  middleware: ["auth", "admin-auth"],
+  layout: "login",
+  pagePermissions: ["PANEL_CREATE_COURSES"],
+});
+
 const route = useRoute();
 const courseId = route.params.id;
 

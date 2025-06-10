@@ -2,8 +2,9 @@
 import draggable from "vuedraggable";
 
 definePageMeta({
+  middleware: ["auth", "admin-auth"],
   layout: "login",
-  middleware: "auth",
+  pagePermissions: ["PANEL_CREATE_COURSES"],
 });
 
 // ------ Parametry ----------------------------------------

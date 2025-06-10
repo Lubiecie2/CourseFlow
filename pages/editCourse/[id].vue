@@ -5,6 +5,7 @@ const courseId = route.params.id;
 definePageMeta({
   middleware: ["auth", "admin-auth"],
   layout: "login",
+  pagePermissions: ["PANEL_CREATE_COURSES"],
 });
 </script>
 
