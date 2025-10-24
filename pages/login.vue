@@ -23,27 +23,28 @@ const onSubmit = async () => {
       credentials: "include",
     });
 
-    if (response.user && response.user.is_verified === false) {
-      const userStore = useUserStore();
-      userStore.user = {
-        id: response.user.id,
-        email: response.user.email,
-        is_verified: false,
-      };
+    // if (response.user && response.user.is_verified === false) {
+    //   const userStore = useUserStore();
+    //   userStore.user = {
+    //     id: response.user.id,
+    //     email: response.user.email,
+    //     is_verified: false,
+    //   };
 
-      try {
-        await useApiFrontend("/auth/resend-code", {
-          method: "POST",
-          body: { email: email.value },
-        });
-      } catch (resendError) {
-        console.error("Error resending verification code:", resendError);
-      }
+    //   try {
+    //     await useApiFrontend("/auth/resend-code", {
+    //       method: "POST",
+    //       body: { email: email.value },
+    //     });
+    //   } catch (resendError) {
+    //     console.error("Error resending verification code:", resendError);
+    //   }
 
-      router.push(`/verifyRegister?email=${email.value}`);
-      return;
-    }
+    //   router.push(`/verifyRegister?email=${email.value}`);
+    //   return;
+    // }
 
+    // ZOSTAW TYLKO TO:
     const user = useUserStore();
     await user.fetchUser();
     navigateTo("/");
@@ -113,13 +114,13 @@ const onSubmit = async () => {
             >
               {{ errorMessage }}
             </p>
-            <button
+            <!-- <button
               class="remember-button"
               type="button"
               @click="router.push('/resetPassword')"
             >
               Nie pamiętam hasła
-            </button>
+            </button> -->
             <div class="submit-button-container">
               <button
                 class="submit-button"

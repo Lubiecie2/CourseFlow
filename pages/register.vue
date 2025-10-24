@@ -52,7 +52,13 @@ const onSubmit = async () => {
       },
     });
 
-    router.push({ name: "verifyRegister", query: { email: email.value } });
+    // router.push({ name: "verifyRegister", query: { email: email.value } });
+    successMessage.value =
+      "Konto zostało utworzone! Możesz się teraz zalogować.";
+
+    setTimeout(() => {
+      router.push("/login");
+    }, 2000);
   } catch (error) {
     errorMessage.value = "Wystąpił błąd podczas rejestracji. Spróbuj ponownie.";
   }
