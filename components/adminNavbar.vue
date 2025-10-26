@@ -1,6 +1,10 @@
 <script setup>
 import { ref } from "vue";
 import { useUserStore } from "../stores/users";
+import { useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
+import NotificationBadge from "./NotificationBadge.vue";
+import { usePermissionGuard } from "../composables/usePermissionGuard";
 
 const menuOpen = ref(false);
 const router = useRouter();

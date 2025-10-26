@@ -1,258 +1,320 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useUserStore } from "../stores/users";
+import { useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
 
 const menuOpen = ref(false);
+const isLoading = ref(true);
 const router = useRouter();
-
-const goToLogin = () => {
-  router.push("/login");
-};
-const goToRegister = () => {
-  router.push("/register");
-};
-
-const goToCourses = () => {
-  router.push("/courses");
-};
-
-const goToProfile = () => {
-  router.push("/profile/profil");
-};
-
-const goToMainPage = () => {
-  router.push("/");
-};
-
-const goToAdminPanel = () => {
-  router.push("/admin");
-};
-
-const goToCommunity = () => {
-  router.push("/community/questions");
-};
-
-function toggleMenu() {
-  menuOpen.value = !menuOpen.value;
-}
 
 const userStore = useUserStore();
 const { user, isLogged } = storeToRefs(userStore);
 const { logout } = userStore;
+
+// Hide mobile menu on initial load and initialize
+onMounted(() => {
+  setTimeout(() => {
+    isLoading.value = false;
+  }, 100);
+});
+
+const navigation = {
+  goTo: (path) => {
+    menuOpen.value = false;
+    router.push(path);
+  },
+  handleLogout: async () => {
+    menuOpen.value = false;
+    await logout();
+    router.push("/");
+  },
+};
+
+const toggleMenu = () => {
+  if (!isLoading.value) {
+    menuOpen.value = !menuOpen.value;
+  }
+};
 </script>
 
 <template>
-  <div>
-    <div class="navbar">
-      <div
-        class="nav-logo"
-        @click="goToMainPage"
-        style="cursor: pointer"
-      >
-        <img
-          src="../public/images/Logo.png"
-          alt="Logo"
-        />
-        <span class="break-line" />
-        <p class="logo-text">
-          Platforma <br />
-          Szkoleniowa
-        </p>
-      </div>
+  <nav class="navbar">
+    <!-- Logo section -->
+    <div
+      class="nav-logo"
+      @click="navigation.goTo('/')"
+    >
+      <img
+        src="../public/images/Logo.png"
+        alt="Logo"
+        class="logo-image"
+      />
+      <span class="break-line" />
+      <p class="logo-text">
+        Platforma <br />
+        Szkoleniowa
+      </p>
+    </div>
 
-      <!-- Zalogowany użytkownik -->
-
-      <div
-        class="nav-button-container"
-        v-if="isLogged"
+    <!-- Navigation links -->
+    <div
+      class="nav-links"
+      :class="{ active: menuOpen, loading: isLoading }"
+    >
+      <button
+        class="nav-button"
+        @click="navigation.goTo('/courses')"
       >
+        Kursy
+      </button>
+      <button
+        class="nav-button"
+        @click="navigation.goTo('/community/questions')"
+      >
+        Społeczność
+      </button>
+
+      <template v-if="isLogged">
         <button
-          class="red-button"
-          @click="goToAdminPanel"
           v-if="usePermissionGuard('PANEL_SHOW_ADMIN_PANEL')"
+          class="nav-button"
+          @click="navigation.goTo('/admin')"
         >
-          Zarządzaj stroną
+          Panel Admina
         </button>
         <button
-          class="red-button"
-          @click="goToCommunity"
-        >
-          Społeczność
-        </button>
-        <button
-          class="red-button"
-          @click="goToCourses"
-        >
-          Kursy
-        </button>
-        <button
-          class="red-button"
-          @click="goToProfile"
+          class="nav-button"
+          @click="navigation.goTo('/profile/profil')"
         >
           Profil
         </button>
         <button
-          class="red-button"
-          @click="logout"
+          class="nav-button logout-button"
+          @click="navigation.handleLogout"
         >
           Wyloguj
         </button>
-        <NotificationBadge v-if="isLogged" />
-      </div>
-      <!-- Koniec Zalogowany użytkownik -->
+        <NotificationBadge />
+      </template>
 
-      <!-- Niezalogowany użytkownik -->
-      <div
-        class="nav-button-container"
-        v-else
-      >
+      <template v-else>
         <button
-          class="red-button"
-          @click="goToCourses"
-        >
-          Kursy
-        </button>
-        <button
-          class="red-button"
-          @click="goToCommunity"
-        >
-          Społeczność
-        </button>
-        <button
-          class="red-button"
-          @click="goToRegister"
+          class="nav-button"
+          @click="navigation.goTo('/register')"
         >
           Zarejestruj się
         </button>
         <button
-          class="red-button"
-          @click="goToLogin"
+          class="nav-button"
+          @click="navigation.goTo('/login')"
         >
           Zaloguj się
         </button>
-      </div>
-
-      <div
-        class="hamburger"
-        @click="toggleMenu"
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
+      </template>
     </div>
 
-    <transition name="slide">
-      <div
-        class="mobile-menu"
-        v-if="menuOpen"
-      >
-        <NotificationBadge
-          v-if="isLogged"
-          class="mobile-notification"
-        />
-        <button
-          class="red-button"
-          @click="goToAdminPanel"
-          v-if="usePermissionGuard('PANEL_SHOW_ADMIN_PANEL')"
-        >
-          Zarządzaj stroną
-        </button>
-        <button
-          class="red-button"
-          @click="goToCourses"
-        >
-          Kursy
-        </button>
-        <button
-          class="red-button"
-          @click="goToCommunity"
-        >
-          Społeczność
-        </button>
-
-        <template v-if="isLogged">
-          <button
-            class="red-button"
-            @click="goToProfile"
-          >
-            Profil
-          </button>
-          <button
-            class="red-button"
-            @click="logout"
-          >
-            Wyloguj
-          </button>
-        </template>
-
-        <template v-else>
-          <button
-            class="red-button"
-            @click="goToRegister"
-          >
-            Zarejestruj się
-          </button>
-          <button
-            class="red-button"
-            @click="goToLogin"
-          >
-            Zaloguj się
-          </button>
-        </template>
-      </div>
-    </transition>
-  </div>
+    <!-- Hamburger menu -->
+    <button
+      class="hamburger"
+      :class="{ active: menuOpen }"
+      @click="toggleMenu"
+      :disabled="isLoading"
+      aria-label="Menu"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </nav>
 </template>
 
 <style scoped>
 .navbar {
   width: 100%;
   height: 120px;
+  padding: 0 5vw;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: relative;
+  z-index: 1000;
 }
 
 .nav-logo {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-left: 5vh;
+  cursor: pointer;
+  gap: 20px;
 }
 
-.navbar img {
+.logo-image {
   width: 140px;
   height: 70px;
-  margin-right: 20px;
-}
-
-.mobile-notification {
-  margin: 10px 0;
-  align-self: center;
-}
-
-.logo-text {
-  font-weight: 700;
-  font-size: 19px;
-  margin-left: 20px;
+  object-fit: contain;
 }
 
 .break-line {
   width: 1px;
   height: 70px;
-  background-color: black;
-  border: none;
-  margin: 0 5px;
+  background-color: #000;
 }
 
-.nav-button-container {
-  margin-right: 10vh;
+.logo-text {
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+}
+
+.nav-links {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
   align-items: center;
+  gap: 20px;
+  visibility: visible;
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.nav-links.loading {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.nav-button {
+  background-color: rgba(235, 87, 87, 0.85);
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:hover {
+  background-color: rgba(235, 87, 87, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.nav-button:active {
+  transform: translateY(0);
+  background-color: rgba(194, 72, 72, 1);
+}
+
+.logout-button {
+  background-color: #dc3545;
+}
+
+.logout-button:hover {
+  background-color: #c82333;
+}
+
+/* Notification styles */
+.notification-wrapper {
+  position: relative;
+}
+
+.notification-icon {
+  position: relative;
+  color: #eb5757;
+  cursor: pointer;
+  padding: 8px;
+  transition: transform 0.2s ease;
+}
+
+.notification-icon:hover {
+  transform: scale(1.1);
+}
+
+.notification-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #eb5757;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.notification-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.notification-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.notification-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+  background-color: #fff5f5;
+}
+
+.notification-item.unread:hover {
+  background-color: #ffe5e5;
+}
+
+.notification-text {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.notification-time {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.notification-empty {
+  padding: 30px 20px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
 }
 
 .hamburger {
@@ -260,197 +322,137 @@ const { logout } = userStore;
   flex-direction: column;
   justify-content: space-between;
   width: 30px;
-  height: 21px;
+  height: 22px;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  margin-right: 5vh;
+  padding: 0;
+  z-index: 10;
+  transition: opacity 0.3s ease;
+}
+
+.hamburger:disabled {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .hamburger span {
-  display: block;
+  width: 100%;
   height: 3px;
   background-color: #eb5757;
-  border-radius: 2px;
-}
-
-.red-button {
-  background-color: rgba(235, 87, 87, 0.85);
-  color: white;
-  font-size: 16px;
-  font-weight: 500;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-right: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-:deep(.notification-container) {
-  display: inline-flex;
-  vertical-align: middle;
-}
-
-:deep(.notification-badge) {
-  background-color: rgba(235, 87, 87, 0.85);
-  border-radius: 10px;
-  margin-right: 20px;
-  padding: 10px 15px;
-  height: auto;
-  width: auto;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
   transition: all 0.3s ease;
 }
 
-:deep(.notification-badge:hover) {
-  background-color: rgba(235, 87, 87, 0.95);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.hamburger.active span:first-child {
+  transform: translateY(9.5px) rotate(45deg);
 }
 
-:deep(.notification-badge:active) {
-  transform: translateY(0);
-  background-color: rgba(194, 72, 72, 1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.bell-icon) {
-  width: 20px;
-  height: 20px;
-  filter: brightness(0) invert(1);
-}
-
-:deep(.notification-count) {
-  top: -8px;
-  right: -8px;
-}
-
-.red-button:hover {
-  background-color: rgba(235, 87, 87, 0.95);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.red-button:active {
-  transform: translateY(0);
-  background-color: rgba(194, 72, 72, 1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.red-button::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150px;
-  height: 150px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  transition: transform 0.5s, opacity 0.5s;
-}
-
-.red-button:active::after {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-  transition: 0s;
-}
-
-.mobile-menu {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  background-color: #fff;
-  padding: 10px 0;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  position: relative;
-}
-
-.mobile-menu .red-button {
-  margin: 10px 0;
-  width: 80%;
-}
-
-.slide-enter-active,
-.slide-leave-active {
-  transition: max-height 0.5s ease, opacity 0.5s ease;
-}
-.slide-leave-active {
-  position: absolute;
-  width: 100%;
-}
-.slide-enter-from,
-.slide-leave-to {
-  max-height: 0;
+.hamburger.active span:nth-child(2) {
   opacity: 0;
 }
-.slide-enter-to,
-.slide-leave-from {
-  max-height: 500px;
-  opacity: 1;
+
+.hamburger.active span:last-child {
+  transform: translateY(-9.5px) rotate(-45deg);
 }
 
-@media (max-width: 1200px) {
-  .nav-button-container .red-button {
-    padding: 8px 16px;
-    font-size: 14px;
-    margin-right: 10px;
-  }
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Media Queries */
 @media (max-width: 1300px) {
-  .nav-button-container {
+  .nav-links {
+    position: fixed;
+    top: 120px;
+    left: 0;
+    right: 0;
+    background: white;
+    flex-direction: column;
+    padding: 20px;
+    gap: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-150%);
+    transition: transform 0.3s ease, visibility 0s 0.3s;
+    visibility: hidden;
+  }
+
+  .nav-links.active {
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform 0.3s ease;
+  }
+
+  .nav-links.loading {
     display: none;
   }
+
   .hamburger {
     display: flex;
   }
-  .mobile-menu {
-    display: flex;
+
+  .nav-button {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .notification-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 10px 10px 0 0;
+    max-height: 80vh;
+  }
+
+  .notification-list {
+    max-height: 60vh;
   }
 }
+
 @media (max-width: 768px) {
-  .nav-button-container {
-    display: none;
-  }
-  .hamburger {
-    display: flex;
-  }
-  .mobile-menu {
-    display: flex;
-  }
-  .logo-text {
-    display: none;
-  }
-  .break-line {
-    display: none;
-  }
   .navbar {
     height: 90px;
   }
-  .navbar img {
+
+  .nav-links {
+    top: 90px;
+  }
+
+  .logo-image {
     width: 120px;
     height: 60px;
   }
-  .nav-logo {
-    margin-left: 3vh;
+
+  .break-line,
+  .logo-text {
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
-  .navbar img {
+  .navbar {
+    padding: 0 20px;
+  }
+
+  .logo-image {
     width: 100px;
     height: 50px;
   }
-  .nav-logo {
-    margin-left: 2vh;
-  }
-  .hamburger {
-    margin-right: 2vh;
+
+  .nav-button {
+    font-size: 14px;
+    padding: 8px 16px;
   }
 }
 </style>
