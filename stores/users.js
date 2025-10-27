@@ -112,6 +112,8 @@ export const useUserStore = defineStore("user", () => {
     console.log("accessTokenCookie", accessTokenCookie.value);
     if (process.client) {
       try {
+        document.cookie =
+          "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         localStorage.removeItem("user");
         localStorage.removeItem("auth");
 
@@ -123,7 +125,6 @@ export const useUserStore = defineStore("user", () => {
         //       "=;expires=" + new Date().toUTCString() + ";path=/"
         //     );
         // });
-        cosn;
       } catch (e) {
         console.warn("Błąd podczas czyszczenia localStorage:", e);
       }
