@@ -1,7 +1,7 @@
 export default defineNuxtPlugin((nuxtApp) => {
   const api = $fetch.create({
     // <--- Tu jest tworzona instancja $fetch z podstawowym adresem URL
-    baseURL: "https://api.courseflow.pl",
+    baseURL: "https://api.courseflow.pl/api",
     onRequest: ({ request, options, error }) => {
       // <--- Middleware który wykonuje się przed wysłaniem żądania
       const token = useCookie("access_token"); // <--- Pobiera się token z ciasteczka
