@@ -136,7 +136,7 @@ const goToLearning = () => {
 </script>
 
 <template>
-  <UserNavbar></UserNavbar>
+  <MainNavbar></MainNavbar>
   <div class="profile-container">
     <div class="profile-header">
       <h1>Mój Profil</h1>

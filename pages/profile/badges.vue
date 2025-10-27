@@ -44,7 +44,7 @@ const downloadCertificate = async (certificateCode) => {
     const token = useCookie("access_token").value;
 
     const response = await fetch(
-      `http://localhost:4000/api/certificates/download/${certificateCode}`,
+      `https://api.courseflow.pl/api/certificates/download/${certificateCode}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -78,9 +78,9 @@ const downloadCertificate = async (certificateCode) => {
 };
 
 const getCourseImage = (imagePath) => {
-  if (!imagePath) return "http://localhost:4000/uploads/default-course.jpg";
+  if (!imagePath) return "https://api.courseflow.pl/uploads/default-course.jpg";
   if (imagePath.startsWith("http")) return imagePath;
-  return `http://localhost:4000/uploads/${imagePath}`;
+  return `https://api.courseflow.pl/uploads/${imagePath}`;
 };
 
 const formatDate = (dateString) => {
@@ -92,7 +92,7 @@ onMounted(fetchCertificates);
 </script>
 
 <template>
-  <UserNavbar />
+  <MainNavbar></MainNavbar>
   <h2>Twoje certyfikaty</h2>
   <div class="certificates-container">
     <div

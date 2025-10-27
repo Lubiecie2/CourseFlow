@@ -36,7 +36,7 @@ const fetchCourseData = async () => {
     };
 
     if (response.course_image) {
-      originalImageUrl.value = `http://localhost:4000/uploads/${response.course_image}`;
+      originalImageUrl.value = `https://api.courseflow.pl/uploads/${response.course_image}`;
       previewImage.value = originalImageUrl.value;
     }
   } catch (error) {
@@ -95,7 +95,7 @@ const submitForm = async () => {
     successMessage.value = "Kurs został zaktualizowany pomyślnie";
 
     if (response.course && response.course.course_image) {
-      originalImageUrl.value = `http://localhost:4000/uploads/${response.course.course_image}`;
+      originalImageUrl.value = `https://api.courseflow.pl/uploads/${response.course.course_image}`;
       previewImage.value = originalImageUrl.value;
     }
 

@@ -63,9 +63,10 @@ const signUpUserToCourse = async () => {
 };
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath) return "http://localhost:4000/uploads/default-course.jpg";
+  const uploadsBase = "https://api.courseflow.pl/uploads";
+  if (!imagePath) return `${uploadsBase}/default-course.jpg`;
   if (imagePath.startsWith("http")) return imagePath;
-  return `http://localhost:4000/uploads/${imagePath}`;
+  return `${uploadsBase}/${imagePath}`;
 };
 onMounted(fetchCourse);
 </script>

@@ -46,7 +46,7 @@ onMounted(checkUserCourses);
 </script>
 
 <template>
-  <UserNavbar></UserNavbar>
+  <MainNavbar></MainNavbar>
   <div class="c">
     <h2>Moje kursy</h2>
     <div

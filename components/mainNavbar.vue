@@ -207,11 +207,11 @@ const toggleMenu = () => {
 }
 
 .logout-button {
-  background-color: #dc3545;
+  background-color: rgba(235, 87, 87, 0.85);
 }
 
 .logout-button:hover {
-  background-color: #c82333;
+  background-color: rgba(235, 87, 87, 0.95);
 }
 
 /* Notification styles */

@@ -76,7 +76,7 @@ const downloadFile = async (noteId, fileName) => {
     const token = useCookie("access_token").value;
 
     const response = await fetch(
-      `http://localhost:4000/api/notes/${noteId}/download`,
+      `https://api.courseflow.pl/api/notes/${noteId}/download`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
               class="image-attachment"
             >
               <img
-                :src="`http://localhost:4000/uploads/${note.file_path
+                :src="`https://api.courseflow.pl/uploads/${note.file_path
                   .split('/')
                   .pop()}`"
                 alt="Załącznik do notatki"

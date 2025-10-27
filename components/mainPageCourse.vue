@@ -109,8 +109,8 @@ onMounted(() => {
             <img
               :src="
                 course.course_image
-                  ? `http://localhost:4000/uploads/${course.course_image}`
-                  : `http://localhost:4000/uploads/default-course.jpg`
+                  ? `https://api.courseflow.pl/uploads/${course.course_image}`
+                  : `https://api.courseflow.pl/uploads/default-course.jpg`
               "
               :alt="course.title"
             />
