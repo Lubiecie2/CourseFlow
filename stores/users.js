@@ -114,14 +114,14 @@ export const useUserStore = defineStore("user", () => {
         localStorage.removeItem("user");
         localStorage.removeItem("auth");
 
-        document.cookie.split(";").forEach(function (c) {
-          document.cookie = c
-            .replace(/^ +/, "")
-            .replace(
-              /=.*/,
-              "=;expires=" + new Date().toUTCString() + ";path=/"
-            );
-        });
+        // document.cookie.split(";").forEach(function (c) {
+        //   document.cookie = c
+        //     .replace(/^ +/, "")
+        //     .replace(
+        //       /=.*/,
+        //       "=;expires=" + new Date().toUTCString() + ";path=/"
+        //     );
+        // });
       } catch (e) {
         console.warn("Błąd podczas czyszczenia localStorage:", e);
       }
