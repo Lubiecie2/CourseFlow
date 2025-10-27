@@ -270,6 +270,10 @@ const toggleMenu = () => {
     transform: translateY(-150%);
     transition: transform 0.3s ease, visibility 0s 0.3s;
     visibility: hidden;
+    height: auto;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    z-index: 999;
   }
 
   .nav-links.active {
