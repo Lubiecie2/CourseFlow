@@ -106,10 +106,11 @@ export const useUserStore = defineStore("user", () => {
     console.log("🔄 Wylogowywanie użytkownika...");
     user.value = null;
 
-    const accessTokenCookie = useCookie("access_token");
-    console.log("accessTokenCookiedupa", accessTokenCookie.value);
+    const accessTokenCookie = useCookie("access_token", {
+	domain: '.courseflow.pl',
+    });
     accessTokenCookie.value = null;
-    console.log("accessTokenCookie", accessTokenCookie.value);
+
     if (process.client) {
       try {
         document.cookie =
@@ -117,14 +118,14 @@ export const useUserStore = defineStore("user", () => {
         localStorage.removeItem("user");
         localStorage.removeItem("auth");
 
-        // document.cookie.split(";").forEach(function (c) {
-        //   document.cookie = c
-        //     .replace(/^ +/, "")
-        //     .replace(
-        //       /=.*/,
-        //       "=;expires=" + new Date().toUTCString() + ";path=/"
-        //     );
-        // });
+        document.cookie.split(";").forEach(function (c) {
+           document.cookie = c
+             .replace(/^ +/, "")
+             .replace(
+               /=.*/,
+               "=;expires=" + new Date().toUTCString() + ";path=/"
+             );
+        });
       } catch (e) {
         console.warn("Błąd podczas czyszczenia localStorage:", e);
       }
