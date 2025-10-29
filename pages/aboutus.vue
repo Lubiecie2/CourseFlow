@@ -12,14 +12,18 @@ const teamMembers = ref([
     role: "CEO & Założyciel",
     bio: "Ekspert z 10-letnim doświadczeniem w edukacji online, pasjonat nowoczesnych metod nauczania.",
     image: "/images/recenzant2.jpg",
-    github: "https://github.com/Lubiecie2",
   },
   {
-    name: "Jakub Hajduk",
+    name: "Jakub Tokarczyk",
     role: "CEO & Założyciel",
-    bio: "Pasjonat edukacji i technologii, odpowiedzialny za rozwój platformy CourseFlow.",
+    bio: "Pasjonat technologii i strażak z powołania.",
     image: "/images/recenzant3.jpg",
-    github: "https://github.com/HajdukJ",
+  },
+  {
+    name: "Dominik Żuchowicz",
+    role: "CEO & Założyciel",
+    bio: "Pasjonat technologii.",
+    image: "/images/recenzant3.jpg",
   },
 ]);
 
